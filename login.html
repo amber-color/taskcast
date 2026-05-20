@@ -192,22 +192,33 @@
         document.getElementById('errorMsg').textContent = msg;
     }
 
+    async function authFetch(body) {
+        const res = await fetch('/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (!res.ok && res.headers.get('Content-Type')?.includes('text/html')) {
+            throw new Error(`サーバーエラー (${res.status})`);
+        }
+        return res.json();
+    }
+
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         showError('');
         const username = document.getElementById('loginUsername').value.trim();
         const password = document.getElementById('loginPassword').value;
-        const res = await fetch('/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'login', username, password })
-        });
-        const data = await res.json();
-        if (data.ok) {
-            localStorage.setItem('credentials', JSON.stringify({ username, password }));
-            location.href = 'index.html';
-        } else {
-            showError(data.error || 'ログインに失敗しました');
+        try {
+            const data = await authFetch({ action: 'login', username, password });
+            if (data.ok) {
+                localStorage.setItem('credentials', JSON.stringify({ username, password }));
+                location.href = 'index.html';
+            } else {
+                showError(data.error || 'ログインに失敗しました');
+            }
+        } catch (err) {
+            showError(err.message || 'ネットワークエラーが発生しました');
         }
     });
 
@@ -221,16 +232,15 @@
             showError('パスワードが一致しません');
             return;
         }
-        const res = await fetch('/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'register', username, password })
-        });
-        const data = await res.json();
-        if (data.ok) {
-            location.href = 'index.html';
-        } else {
-            showError(data.error || '登録に失敗しました');
+        try {
+            const data = await authFetch({ action: 'register', username, password });
+            if (data.ok) {
+                location.href = 'index.html';
+            } else {
+                showError(data.error || '登録に失敗しました');
+            }
+        } catch (err) {
+            showError(err.message || 'ネットワークエラーが発生しました');
         }
     });
 </script>
