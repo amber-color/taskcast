@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Today'sTaskTracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#333333">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TaskTracker">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link href="vendor/fullcalendar.min.css" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+        }
+
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body {
+            overflow: hidden;
+            background: white;
+            overscroll-behavior: none;
+        }
+
+        /* 全体レイアウト */
+        #main {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        #todayArea {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 上部バー */
+        #mobileBar {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            padding: 8px 20px;
+        }
+
+        #topBarInner {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        #calendarControls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ‹ › ナビゲーション */
+        #prevBtn, #nextBtn {
+            background: #e8e8ed;
+            border: none;
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            font-size: 15px;
+            color: #444;
+            cursor: pointer;
+            transition: background 0.13s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        #prevBtn:hover, #nextBtn:hover { background: #d0d0d6; }
+
+        /* 日付タイトル */
+        #calendarTitle {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            min-width: 100px;
+            text-align: center;
+            user-select: none;
+        }
+
+        /* セグメントコントロール（日・週・月） */
+        #viewSwitcher {
+            display: flex;
+            background: #e8e8ed;
+            border-radius: 9px;
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .view-btn {
+            background: transparent;
+            border: none;
+            border-radius: 7px;
+            padding: 0 11px;
+            height: 26px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #777;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            white-space: nowrap;
+        }
+        .view-btn:hover:not(.active) { color: #333; }
+        .view-btn.active {
+            background: #fff;
+            color: #222;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.14), 0 0 0 0.5px rgba(0,0,0,0.06);
+        }
+
+        /* 平日トグルボタン */
+        #weekdayBtn {
+            background: #e8e8ed;
+            border: none;
+            border-radius: 8px;
+            padding: 0 12px;
+            height: 32px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.13s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        #weekdayBtn:hover { background: #d0d0d6; }
+        #weekdayBtn.active {
+            background: #333;
+            color: #fff;
+        }
+
+        /* 右側エリア */
+        #timebar {
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        #timebar input[type="time"] {
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            font-family: inherit;
+            padding: 0;
+            height: auto;
+            appearance: textfield;
+            cursor: pointer;
+        }
+
+        /* ダッシュボード・設定ボタン */
+        #dashboardBtn, #settingsBtn {
+            background: #e8e8ed;
+            border: none;
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            font-size: 15px;
+            color: #444;
+            cursor: pointer;
+            transition: background 0.13s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        #dashboardBtn:hover, #settingsBtn:hover { background: #d0d0d6; }
+
+        /* コンテンツエリア */
+        #container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            width: 100%;
+            align-self: stretch;
+        }
+
+        #tasklist {
+            flex: 0 0 25%;
+            min-width: 220px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #eee;
+            height: 100%;
+            background: white;
+        }
+
+        #tasks-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5px 10px 10px 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media screen and (max-width: 800px) {
+            #mobileBar { padding: 6px 12px; }
+            .omit-text { display: none; }
+            #viewSwitcher { display: none; }
+            #weekdayBtn { display: none; }
+            #topBarInner { gap: 8px; }
+            #calendarControls { gap: 6px; }
+        }
+
+        #tasks {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .task {
+            padding: 8px;
+            position: relative;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+        }
+
+        .task strong {
+            font-weight: 600;
+            font-size: 0.92em;
+        }
+
+        .task-meta {
+            font-size: 0.78em;
+            color: #888;
+        }
+
+        .task-time {
+            float: right;
+            font-size: 0.78em;
+            color: #888;
+        }
+
+        .done {
+            opacity: 0.5;
+            /*text-decoration: line-through;*/
+        }
+
+        #task-toolbar {
+            display: none;
+        }
+
+        .done-folder-header {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 8px;
+            background: #e5e7eb;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #6b7280;
+            user-select: none;
+            margin-bottom: 6px;
+        }
+        .done-folder-header:hover { background: #d1d5db; }
+        .done-folder-body {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.65; }
+        }
+        .working {
+            border: 2px solid red;
+            animation: breathe 1.8s ease-in-out infinite;
+        }
+
+        #quickAddBar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            background: #fff;
+            border-radius: 999px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.08);
+            padding: 10px 22px;
+            display: flex;
+            align-items: center;
+            width: min(560px, 88vw);
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #quickAddBar.hidden {
+            transform: translateX(-50%) translateY(calc(100% + 30px));
+        }
+        #quickAddInput {
+            border: none;
+            outline: none;
+            font-size: 15px;
+            width: 100%;
+            background: transparent;
+            color: #333;
+        }
+        #quickAddInput::placeholder { color: #bbb; }
+
+        #newtask {
+            padding: 10px;
+            border-top: 1px solid #ccc;
+            background: #f5f5f7;
+            padding: 10px 16px;
+            max-width: 100%;
+            margin: 0;
+            font-size: 16px;
+        }
+
+        #newtask input,
+        #newtask textarea {
+            height: 30px;
+            width: 100%;
+        }
+
+        #newtask button {
+            height: 30px;
+            width: 30px;
+        }
+
+        #newtask input {
+            margin-bottom: 5px;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 0px;
+        }
+
+        #title {
+            flex: 1;
+            max-width: 80%;
+        }
+
+        #estimate {
+            max-width: 20%;
+        }
+
+        #memo {
+            flex: 1;
+            max-width: 100%;
+            resize: none;
+        }
+
+        #calendar {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* 週表示: ヘッダー・タイムライン共通の列区切り線（絶対配置divで描画） */
+        .fc-week-lane-divider {
+            position: absolute;
+            top: 0; left: 0;
+            width: 1px; height: 100%;
+            background: #eee;
+            pointer-events: none;
+            z-index: 2;
+        }
+        /* 週表示: 時間軸列の右ボーダーを非表示（1日目左はdividerで代替） */
+        #calendar .fc-timeGridWeek-view .fc-timegrid-axis { border-right: none !important; }
+
+        /* カレンダー全ボーダーをトップバー下線（1px #eee）に統一 */
+        #calendar .fc-theme-standard td,
+        #calendar .fc-theme-standard th {
+            border-color: #eee !important;
+        }
+        #calendar .fc-scrollgrid {
+            border-color: #eee !important;
+        }
+        /* 左端の外枠ボーダーを除去（scrollgrid自身のborderと列border重複回避） */
+        #calendar .fc-scrollgrid-section-header > td:first-child,
+        #calendar .fc-scrollgrid-section-body > td:first-child {
+            border-left: none !important;
+        }
+        /* 半時間スロットの点線も #eee に統一 */
+        #calendar .fc-timegrid-slot-minor {
+            border-top-color: #eee !important;
+        }
+
+        .task-actions {
+            display: flex;
+            width: 100%;
+            margin-top: 6px;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            /* 丸みからはみ出る角を隠す */
+        }
+
+        .task-actions button {
+            flex: 1 1 25%;
+            border: none;
+            border-right: 1px solid #eee;
+            padding: 5px 0;
+            color: #555;
+            background: none;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .task-actions svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* 最後のボタンは右ボーダーなし */
+        .task-actions button:last-child {
+            border-right: none;
+        }
+
+        .task-actions button:hover {
+            background: #f0f0f0;
+        }
+
+        .color-palette {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin: 5px 0;
+        }
+
+        .color-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .color-swatch.selected {
+            border: 2px solid black;
+        }
+
+        #calendar .fc .fc-scrollgrid,
+        #calendar .fc .fc-daygrid,
+        #calendar .fc .fc-timegrid,
+        #calendar .fc .fc-view-harness,
+        #calendar .fc .fc-view {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+
+        #calendar .fc-scrollgrid-sync-inner,
+        #calendar .fc-timegrid-axis {
+            background-color: #fff !important;
+        }
+
+
+
+        #calendar .fc-timeGridDay-view .fc-col-header {
+            display: none !important;
+        }
+
+        #calendar .fc-header-toolbar {
+            display: none !important;
+        }
+
+        .fc-timegrid-slot {
+            height: var(--slot-height, 90px) !important;
+            background-color: #fff !important;
+        }
+
+        .fc-timegrid-slot-label {
+            background-color: white !important;
+        }
+
+        .fc-event {
+            border-width: 2px !important;
+        }
+
+        .fc-event-time {
+            font-size: larger !important;
+            color: black !important;
+        }
+
+        .fc-event-title {
+            color: black;
+            font-weight: bold;
+        }
+
+        .drag-handle {
+            cursor: grab;
+            font-size: 18px;
+            user-select: none;
+            color: #999;
+            position: absolute;
+            top: 50%;
+            right: 4px;
+            transform: translateY(-50%);
+        }
+
+        #dashboardBtn {
+            margin-left: 0;
+            /* 左に押しやる指定を解除 */
+            margin-right: 3px;
+            padding: 8px 8px;
+            background: #e0e0e5;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+
+        /* 土曜を青に */
+        .fc .fc-day-sat {
+            color: blue;
+        }
+
+        /* 日曜を赤に */
+        .fc .fc-day-sun {
+            color: red;
+        }
+
+        #calendarTitle {
+            font-size: 20px;
+        }
+
+        /* メモ内の長いURLを強制改行して崩れを防ぐ */
+        .task .memo {
+            overflow-wrap: anywhere;
+            /* もっとも強力に折り返す */
+            word-break: break-word;
+            /* 古いブラウザ対策 */
+            white-space: pre-wrap;
+            /* メモの改行は保持 */
+        }
+
+        /* クリックできるリンクの見た目（任意） */
+        .task .memo a {
+            color: #06c;
+            text-decoration: underline;
+        }
+
+        /* 追加：タイトルリンクの見た目（任意） */
+        .task .title-link {
+            color: #06c;
+            text-decoration: underline;
+        }
+
+        .task .title-link:visited {
+            color: #551a8b;
+        }
+
+        /* ===== 編集モーダル ===== */
+        #editModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        #editModal.open {
+            display: flex;
+        }
+        #editModalBox {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            width: 420px;
+            max-width: 95vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #editModalBox h3 {
+            margin: 0 0 4px;
+            font-size: 16px;
+            color: #333;
+        }
+        #editModalBox input[type="text"],
+        #editModalBox input[type="number"],
+        #editModalBox input[type="url"],
+        #editModalBox input[type="date"],
+        #editModalBox input[type="time"],
+        #editModalBox textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        #editModalBox textarea {
+            resize: vertical;
+            min-height: 72px;
+        }
+        .modal-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .modal-row label {
+            font-size: 13px;
+            color: #555;
+            white-space: nowrap;
+        }
+        .modal-row input { flex: 1; }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .modal-footer button {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        #modalCancelBtn { background: #e0e0e5; color: #333; }
+        #modalSaveBtn   { background: #333; color: #fff; }
+        #modalSaveBtn:hover { background: #555; }
+        .fixed-toggle {
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            background: #f5f5f5;
+            color: #888;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .fixed-toggle.active {
+            background: #333;
+            color: #fff;
+            border-color: #333;
+        }
+
+        .section-divider {
+            color: #9ca3af;
+            font-size: 11px;
+            padding: 6px 0 2px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 4px;
+        }
+        .task.waiting-mode {
+            opacity: 0.75;
+        }
+        .resurface-badge {
+            display: inline-block;
+            font-size: 10px;
+            background: #fbbf24;
+            color: #fff;
+            border-radius: 4px;
+            padding: 1px 5px;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+        .task-wait-date {
+            font-size: 11px;
+            color: #777;
+            margin-left: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main">
+        <div id="todayArea">
+            <div id="mobileBar">
+                <div id="topBarInner">
+                    <div id="calendarControls">
+                        <button id="prevBtn">‹</button>
+                        <span id="calendarTitle"></span>
+                        <button id="nextBtn">›</button>
+                        <div id="viewSwitcher">
+                            <button class="view-btn active" data-view="timeGridDay">日</button>
+                            <button class="view-btn" data-view="timeGridWeek">週</button>
+                            <button class="view-btn" data-view="dayGridMonth">月</button>
+                        </div>
+                        <button id="weekdayBtn">平日</button>
+                    </div>
+                    <div id="timebar">
+                        <button id="dashboardBtn" title="ダッシュボード"><svg viewBox="0 0 12 10" width="14" height="14" fill="currentColor"><rect x="0" y="4" width="3" height="6" rx="0.5"/><rect x="4.5" y="2" width="3" height="8" rx="0.5"/><rect x="9" y="0" width="3" height="10" rx="0.5"/></svg></button>
+                        <div style="font-size:13px;line-height:1.5;color:#555;">
+                            <span>開始 <span id="startTimeDisplay">09:00</span></span>
+                            <br><span>終了 <span id="endTimeDisplay">--:--</span></span>
+                        </div>
+                        <button id="settingsBtn" title="設定"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></button>
+                    </div>
+                </div>
+            </div>
+            <div id="container">
+                <div id="tasklist">
+                    <div id="tasks-container">
+                        <div id="tasks"></div>
+                    </div>
+                </div>
+                <div id="calendar">
+                    <div id="fc"></div>
+                </div>
+
+            </div>
+            <div id="quickAddBar">
+                <input type="text" id="quickAddInput" placeholder="タスクを追加… (Enter で確定)" autocomplete="off">
+            </div>
+        </div>
+    </div>
+
+    <!-- 編集モーダル -->
+    <div id="editModal">
+        <div id="editModalBox">
+            <h3>タスク編集</h3>
+            <div id="modalTimeRow" class="modal-row" style="display:none;">
+                <label>開始</label><input type="time" id="modalStartTime">
+                <label>終了</label><input type="time" id="modalEndTime">
+            </div>
+            <div class="modal-row">
+                <label>日付</label><input type="date" id="modalDate">
+            </div>
+            <div class="modal-row" id="modalFixedRow">
+                <button type="button" id="modalFixedToggle" class="fixed-toggle">開始時刻: 固定しない</button>
+                <input type="time" id="modalScheduledTime" style="display:none;flex:1;">
+            </div>
+            <div class="modal-row">
+                <input type="text" id="modalTitle" placeholder="タイトル" style="flex:1;">
+                <label>見積</label><input type="number" id="modalEstimate" style="width:70px;">
+            </div>
+            <input type="url" id="modalUrl" placeholder="URL">
+            <div class="color-palette" id="modalColorPalette"></div>
+            <textarea id="modalMemo" placeholder="メモ"></textarea>
+            <div class="modal-footer">
+                <button id="modalCancelBtn">キャンセル</button>
+                <button id="modalSaveBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 設定モーダル -->
+    <div id="settingsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:12px;padding:24px;width:360px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);display:flex;flex-direction:column;gap:12px;">
+            <h3 style="margin:0 0 4px;font-size:16px;color:#333;">設定</h3>
+            <!-- 設定項目（後から追加） -->
+            <div style="flex:1;"></div>
+            <hr style="border:none;border-top:1px solid #eee;margin:4px 0;">
+            <button id="settingsLogoutBtn" style="width:100%;padding:10px;background:#f44336;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">ログアウト</button>
+        </div>
+    </div>
+
+    <!-- 待ちモーダル -->
+    <div id="waitModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:12px;padding:24px;width:320px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,0.2);display:flex;flex-direction:column;gap:10px;">
+            <h3 style="margin:0 0 4px;font-size:16px;color:#333;">待ち設定</h3>
+            <textarea id="waitModalTitle" rows="2" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:14px;font-family:inherit;resize:none;"></textarea>
+            <div class="modal-row">
+                <label>再浮上日</label><input type="date" id="waitModalDate">
+            </div>
+            <div class="modal-footer">
+                <button id="waitModalCancelBtn" style="padding:8px 20px;border:none;border-radius:8px;font-size:14px;cursor:pointer;background:#e0e0e5;color:#333;">キャンセル</button>
+                <button id="waitModalSaveBtn" style="padding:8px 20px;border:none;border-radius:8px;font-size:14px;cursor:pointer;background:#333;color:#fff;">待ち状態にする</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="vendor/sortable.min.js"></script>
+    <script src="vendor/fullcalendar.min.js"></script>
+    <script>
+        let allTasks = [];
+        let waitingTargetId = null;
+        let lastResurfacedCount = 0;
+        let doneExpanded = false;
+        let waitExpanded = false;
+        const colorList = [
+            "#EF9A9A", "#F48FB1", "#CE93D8", "#B39DDB",
+            "#9FA8DA", "#90CAF9", "#80DEEA", "#80CBC4",
+            "#A5D6A7", "#C5E1A5", "#FFF176", "#FFE082"
+        ];
+        let currentDate = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        let calendar;
+        let editingId = null;
+        let pendingNewTask = null;
+        const tasksEl = document.getElementById("tasks");
+        let autoStartNext = false;
+        let startTime = localStorage.getItem('startTime') || '09:00';
+
+        const SLOT_HEIGHTS = [36, 60, 90, 120, 150];
+        const endTimeDisplay = document.getElementById("endTimeDisplay");
+        document.getElementById("startTimeDisplay").textContent = startTime;
+
+        let showTimer;
+
+        function getTasks(date) {
+            return allTasks.filter(t => t.date === date);
+        }
+
+        async function apiCall(body, keepalive = false) {
+            try {
+                const res = await fetch('/api', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                    keepalive
+                });
+                if (res.status === 401) { location.href = 'login.html'; return null; }
+                return await res.json();
+            } catch (e) {
+                console.error('API error:', e);
+                return null;
+            }
+        }
+
+        function syncLocal() {
+            localStorage.setItem("allTasks", JSON.stringify(allTasks));
+        }
+
+        async function loadTasks() {
+            try {
+                const res = await fetch('/api', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'load' })
+                });
+                if (res.status === 401) { location.href = 'login.html'; return; }
+                if (!res.ok) throw new Error("読み込み失敗");
+                const serverTasks = await res.json();
+
+                if (serverTasks.length === 0) {
+                    const localTasks = JSON.parse(localStorage.getItem("allTasks")) ?? [];
+                    if (localTasks.length > 0) {
+                        // DBが空でローカルにデータがある場合、DBへ移行する
+                        for (const task of localTasks) {
+                            await apiCall({ action: 'add', task });
+                        }
+                        const res2 = await fetch('/api', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'load' })
+                        });
+                        allTasks = await res2.json();
+                        syncLocal();
+                        return;
+                    }
+                }
+
+                allTasks = serverTasks;
+                syncLocal();
+            } catch (e) {
+                console.error("タスク読み込みエラー:", e);
+                allTasks = JSON.parse(localStorage.getItem("allTasks")) ?? [];
+            }
+        }
+
+        function formatDiff(task) {
+            const diff = task.actual - task.estimate;
+            if (diff === 0) return '±0分';
+            return (diff > 0 ? '+' : '') + diff + '分';
+        }
+
+        function getDiffColor(task) {
+            const diff = task.actual - task.estimate;
+            if (diff > 0) return 'red';
+            if (diff < 0) return 'blue';
+            return 'gray';
+        }
+
+        const SVG = {
+            play:  `<svg viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M4 2.5l9 5.5-9 5.5z"/></svg>`,
+            edit:  `<svg viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M11.1 1.9a1.5 1.5 0 012.1 2.1L5 12.2H3v-2.1L11.1 1.9z"/></svg>`,
+            trash: `<svg viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6.5 1.5h3l.5.5H13v1H3V2h3l.5-.5zM4 4.5h8l-.9 9.5H4.9L4 4.5zm2 1.5v6.5h1V6H6zm3 0v6.5h1V6H9z"/></svg>`,
+            pause: `<svg viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect x="3.5" y="2.5" width="3.5" height="11" rx="1"/><rect x="9" y="2.5" width="3.5" height="11" rx="1"/></svg>`,
+            check:  `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><polyline points="2,9 6,13 14,3"/></svg>`,
+            wait:   `<svg viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 1.5a5.5 5.5 0 110 11 5.5 5.5 0 010-11zM7.25 4v4.31l2.97 1.72-.75 1.3L6 9.5V4h1.25z"/></svg>`,
+            unwait: `<svg viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 8.5l3 3 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>`,
+        };
+
+        function renderTaskCard(task, today, showTime) {
+            const div = document.createElement("div");
+            let classes = "task";
+            if (task.done) classes += " done";
+            if (task.startTime > 0 && !task.done && !task.waiting) classes += " working";
+            if (task.waiting && task.waitUntil > today) classes += " waiting-mode";
+            div.className = classes;
+            div.style.background = task.color;
+
+            const isResurfacing = task.waiting && task.waitUntil && task.waitUntil <= today;
+            let waitDateStr = '';
+            if (task.waitUntil) {
+                const parts = task.waitUntil.split('-');
+                waitDateStr = `${parseInt(parts[1])}/${parseInt(parts[2])}`;
+            }
+
+            const actionButtons = (() => {
+                if (task.done) {
+                    return `
+              <button onclick="editTask('${task.id}')" title="編集">${SVG.edit}</button>
+              <button onclick="deleteTask('${task.id}')" title="削除">${SVG.trash}</button>`;
+                } else if (task.waiting) {
+                    return `
+              <button onclick="unwaitTask('${task.id}')" title="待ちを解除">${SVG.unwait}</button>
+              <button onclick="editTask('${task.id}')" title="編集">${SVG.edit}</button>
+              <button onclick="deleteTask('${task.id}')" title="削除">${SVG.trash}</button>`;
+                } else if (task.startTime > 0) {
+                    return `
+              <button onclick="interruptTask('${task.id}')" title="中断">${SVG.pause}</button>
+              <button onclick="waitTask('${task.id}')" title="待ちにする">${SVG.wait}</button>
+              <button onclick="finishTask('${task.id}')" title="完了">${SVG.check}</button>`;
+                } else {
+                    return `
+              <button onclick="startTask('${task.id}')" title="開始">${SVG.play}</button>
+              <button onclick="editTask('${task.id}')" title="編集">${SVG.edit}</button>
+              <button onclick="waitTask('${task.id}')" title="待ちにする">${SVG.wait}</button>
+              <button onclick="deleteTask('${task.id}')" title="削除">${SVG.trash}</button>`;
+                }
+            })();
+
+            const resurfaceBadge = isResurfacing ? `<span class="resurface-badge">⚠ 再浮上</span>` : '';
+            const timeSpan = showTime && task.plannedStart
+                ? `<span class="task-time">${formatTime(task.plannedStart)}-${formatTime(task.plannedEnd)}</span>`
+                : '';
+            const waitDateDisplay = task.waiting && waitDateStr
+                ? `<span class="task-wait-date">催促: ${waitDateStr}</span>`
+                : '';
+
+            div.innerHTML = `
+            <div>
+             ${resurfaceBadge}<strong>${task.url
+                    ? `<a class="title-link" href="${decodeURIComponent(task.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(task.title)}</a>`
+                    : escapeHTML(task.title)
+                }</strong>${timeSpan}<br>
+              <span class="task-meta">見${task.estimate}分/実${task.done ? task.actual : "?"}分</span>
+              ${waitDateDisplay}
+              ${task.done ? `<span class="task-meta" style="color: ${getDiffColor(task)};">(${formatDiff(task)})</span>` : ''}
+              <span class="drag-handle" title="並べ替え">&#9776;</span>
+            </div>
+            <div>
+              <div class="memo">${task.memo ? escapeHTML(task.memo) : ""}</div>
+            <div class="task-actions">${actionButtons}
+            </div>
+          `;
+            div.dataset.id = task.id;
+            return div;
+        }
+
+        function addSectionDivider(label) {
+            const d = document.createElement('div');
+            d.className = 'section-divider';
+            d.textContent = label;
+            tasksEl.appendChild(d);
+        }
+
+        function renderTasks() {
+            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            let { tasks: timedTasks } = buildTimeline(currentDate);
+
+            // 純粋な待ちタスク（timeline から除外済み）を取得
+            const waitingTasks = getTasks(currentDate)
+                .filter(t => !t.done && t.waiting && t.waitUntil > today)
+                .sort((a, b) => (a.waitUntil || '').localeCompare(b.waitUntil || ''));
+
+            const normalTasks = timedTasks.filter(t => !t.done);
+            const doneTasks   = timedTasks.filter(t => t.done);
+
+            tasksEl.innerHTML = "";
+
+            // 完了フォルダー（リスト最上部、スクロール追従）
+            if (doneTasks.length > 0) {
+                const folder = document.createElement('div');
+                folder.className = 'done-folder';
+
+                const header = document.createElement('div');
+                header.className = 'done-folder-header';
+                header.innerHTML = `<span>${doneExpanded ? '▼' : '▶'}</span><span>完了 (${doneTasks.length})</span>`;
+                header.addEventListener('click', () => {
+                    doneExpanded = !doneExpanded;
+                    renderTasks();
+                });
+                folder.appendChild(header);
+
+                if (doneExpanded) {
+                    const body = document.createElement('div');
+                    body.className = 'done-folder-body';
+                    doneTasks.forEach(task => body.appendChild(renderTaskCard(task, today, true)));
+                    folder.appendChild(body);
+                }
+
+                tasksEl.appendChild(folder);
+            }
+
+            normalTasks.forEach(task => tasksEl.appendChild(renderTaskCard(task, today, true)));
+
+            if (waitingTasks.length > 0) {
+                const waitFolder = document.createElement('div');
+                waitFolder.className = 'done-folder';
+
+                const waitHeader = document.createElement('div');
+                waitHeader.className = 'done-folder-header';
+                waitHeader.innerHTML = `<span>${waitExpanded ? '▼' : '▶'}</span><span>待ち (${waitingTasks.length})</span>`;
+                waitHeader.addEventListener('click', () => {
+                    waitExpanded = !waitExpanded;
+                    renderTasks();
+                });
+                waitFolder.appendChild(waitHeader);
+
+                if (waitExpanded) {
+                    const waitBody = document.createElement('div');
+                    waitBody.className = 'done-folder-body';
+                    waitingTasks.forEach(task => waitBody.appendChild(renderTaskCard(task, today, false)));
+                    waitFolder.appendChild(waitBody);
+                }
+
+                tasksEl.appendChild(waitFolder);
+            }
+
+            updateCalendar();
+            updateEndTime();
+        }
+
+        function computePlannedTimes() {
+            const tasks = getTasks(currentDate).sort((a, b) => a.order - b.order);
+            const base = new Date(`${currentDate}T${startTime}`);
+            let currentTime = new Date(base);
+
+            return tasks.map(t => {
+                let start, end;
+
+                if (t.startTime > 0) {
+                    start = new Date(t.startTime);
+                    const duration = t.done ? t.actual : t.estimate;
+                    end = new Date(start.getTime() + duration * 60000);
+                    currentTime = end; // 積み上げ継続
+                } else {
+                    start = new Date(currentTime);
+                    end = new Date(start.getTime() + t.estimate * 60000);
+                    currentTime = end;
+                }
+
+                return { ...t, plannedStart: start, plannedEnd: end };
+            });
+        }
+
+        function formatTime(d) {
+            return d.toTimeString().slice(0, 5);
+        }
+
+        function waitTask(id) {
+            waitingTargetId = id;
+            const task = allTasks.find(t => t.id === id);
+            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            document.getElementById('waitModalTitle').value = task ? task.title : '';
+            document.getElementById('waitModalDate').value = today;
+            document.getElementById('waitModal').style.display = 'flex';
+            setTimeout(() => {
+                const ta = document.getElementById('waitModalTitle');
+                ta?.focus();
+                ta?.setSelectionRange(ta.value.length, ta.value.length);
+            }, 50);
+        }
+
+        function unwaitTask(id) {
+            const task = allTasks.find(t => t.id === id);
+            if (!task) return;
+            task.waiting = false;
+            task.waitUntil = '';
+            syncLocal();
+            apiCall({ action: 'update', id, fields: { waiting: false, waitUntil: '' } });
+            renderTasks();
+        }
+
+        function deleteTask(id) {
+            const task = allTasks.find(t => t.id === id);
+            if (!task) return;
+            allTasks = allTasks.filter(t => t.id !== id);
+            syncLocal();
+            apiCall({ action: 'delete', id });
+            renderTasks();
+        }
+
+        function startTask(id) {
+            const task = allTasks.find(t => t.id === id);
+            if (!task) return;
+
+            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            if (task.date !== today) {
+                alert("本日のタスクしか開始できません。");
+                return;
+            }
+
+            task.startTime = Date.now();
+            syncLocal();
+            apiCall({ action: 'update', id, fields: { startTime: task.startTime } });
+            sortTasksByTime(task.date);
+            renderTasks();
+            requestAnimationFrame(() => refreshNowIndicator());
+        }
+
+        function refreshNowIndicator() {
+            if (!calendar) return;
+            // nowIndicator を作り直して位置を最新にする
+            calendar.setOption('nowIndicator', false);
+            calendar.setOption('nowIndicator', true);
+        }
+
+
+        async function interruptTask(id) {
+            const task = allTasks.find(t => t.id === id);
+            if (!task || !task.startTime || task.done) {
+                alert("開始していないか、すでに完了しています。");
+                return;
+            }
+            const result = await apiCall({ action: 'interrupt', id, now_ms: Date.now() });
+            if (!result) { alert("中断に失敗しました（通信エラー）"); return; }
+            if (!result.ok) { alert("中断に失敗しました: " + (result.error || "不明なエラー")); return; }
+            const otherDays = allTasks.filter(t => t.date !== task.date);
+            allTasks = [...otherDays, ...result.tasks];
+            syncLocal();
+            renderTasks();
+            requestAnimationFrame(() => refreshNowIndicator());
+        }
+
+        function finishTask(id) {
+            const task = allTasks.find(t => t.id === id);
+            if (!task || !task.startTime) { alert("開始していません"); return; }
+            const rawMinutes = (Date.now() - task.startTime) / 60000;
+            task.actual = rawMinutes < 1 ? 1 : Math.floor(rawMinutes);
+            task.done = true;
+            syncLocal();
+            apiCall({ action: 'update', id, fields: { done: true, actual: task.actual } });
+            renderTasks();
+            requestAnimationFrame(() => refreshNowIndicator());
+            if (autoStartNext) {
+                const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                const next = allTasks
+                    .filter(t => t.date === today && !t.done && t.startTime === 0)
+                    .sort((a, b) => a.order - b.order)[0];
+                if (next) startTask(next.id);
+            }
+        }
+
+        function checkAutoScheduled() {
+            const now = Date.now();
+            const today = new Date(now + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            let changed = false;
+
+            for (const task of allTasks) {
+                if (!task.scheduledTime || task.done) continue;
+                const scheduledMs = new Date(`${task.date}T${task.scheduledTime}:00`).getTime();
+                const endMs = scheduledMs + task.estimate * 60000;
+
+                if (task.startTime === 0 && now >= endMs) {
+                    // 開始も終了も過ぎている → 一括でstart+done
+                    task.startTime = scheduledMs;
+                    task.actual = Math.max(1, task.estimate);
+                    task.done = true;
+                    syncLocal();
+                    apiCall({ action: 'update', id: task.id, fields: { startTime: task.startTime, done: true, actual: task.actual } });
+                    changed = true;
+                } else if (task.startTime === 0 && now >= scheduledMs) {
+                    // 開始時刻を過ぎた → 自動開始
+                    task.startTime = scheduledMs;
+                    syncLocal();
+                    apiCall({ action: 'update', id: task.id, fields: { startTime: task.startTime } });
+                    changed = true;
+                } else if (task.startTime > 0 && now >= endMs) {
+                    // 終了時刻を過ぎた → 自動終了
+                    task.actual = Math.max(1, Math.round((endMs - task.startTime) / 60000));
+                    task.done = true;
+                    syncLocal();
+                    apiCall({ action: 'update', id: task.id, fields: { done: true, actual: task.actual } });
+                    changed = true;
+                }
+            }
+
+            // 再浮上チェック（waitUntil 当日になったタスクが増減したら再描画）
+            const todayForWait = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            const resurfacedCount = allTasks.filter(t => t.waiting && t.waitUntil && t.waitUntil <= todayForWait).length;
+            if (resurfacedCount !== lastResurfacedCount) {
+                lastResurfacedCount = resurfacedCount;
+                changed = true;
+            }
+
+            if (changed) {
+                renderTasks();
+                requestAnimationFrame(() => refreshNowIndicator());
+            }
+        }
+
+        function editTask(id) {
+            const task = allTasks.find(t => t.id === id);
+            if (!task) return;
+            editingId = id;
+
+            // モーダルに値をセット
+            document.getElementById("modalDate").value = task.date;
+            document.getElementById("modalTitle").value = task.title;
+            document.getElementById("modalEstimate").value = task.estimate;
+            document.getElementById("modalUrl").value = task.url ? decodeURIComponent(task.url) : "";
+            document.getElementById("modalMemo").value = task.memo || "";
+
+            // 完了タスクのみ開始・終了時刻を表示
+            const timeRow = document.getElementById("modalTimeRow");
+            if (task.done && task.startTime > 0) {
+                timeRow.style.display = "flex";
+                const startD = new Date(task.startTime);
+                document.getElementById("modalStartTime").value = startD.toTimeString().slice(0, 5);
+                const endD = new Date(task.startTime + (task.actual || task.estimate) * 60000);
+                document.getElementById("modalEndTime").value = endD.toTimeString().slice(0, 5);
+            } else {
+                timeRow.style.display = "none";
+            }
+
+            // 日付入力: 進行中は変更不可
+            document.getElementById("modalDate").disabled = (task.startTime > 0 && !task.done);
+
+            // 開始時刻固定トグル (完了・進行中タスクには表示しない)
+            const fixedRow = document.getElementById("modalFixedRow");
+            const fixedToggle = document.getElementById("modalFixedToggle");
+            const scheduledInput = document.getElementById("modalScheduledTime");
+            if (task.done || task.startTime > 0) {
+                fixedRow.style.display = "none";
+            } else {
+                fixedRow.style.display = "flex";
+                const isFixed = !!(task.scheduledTime);
+                fixedToggle.classList.toggle("active", isFixed);
+                fixedToggle.textContent = isFixed ? "開始時刻: 固定" : "開始時刻: 固定しない";
+                scheduledInput.style.display = isFixed ? "" : "none";
+                scheduledInput.value = task.scheduledTime || "";
+            }
+
+            // カラーパレット
+            const palette = document.getElementById("modalColorPalette");
+            palette.innerHTML = colorList.map(c =>
+                `<div class="color-swatch${c === task.color ? ' selected' : ''}" style="background:${c}" data-color="${c}"></div>`
+            ).join('');
+            palette.querySelectorAll(".color-swatch").forEach(s => {
+                s.addEventListener("click", () => {
+                    palette.querySelectorAll(".color-swatch").forEach(x => x.classList.remove("selected"));
+                    s.classList.add("selected");
+                });
+            });
+
+            document.getElementById("editModal").classList.add("open");
+            setTimeout(() => document.getElementById("modalTitle")?.focus(), 50);
+        }
+
+        function cancelEdit() {
+            editingId = null;
+            document.getElementById("editModal").classList.remove("open");
+        }
+
+        function normalizeUrl(u) {
+            const s = (u || "").trim();
+            if (!s) return "";
+            // スキーマが無ければ https を付与
+            if (!/^https?:\/\//i.test(s)) return "https://" + s;
+            return s;
+        }
+
+        function saveEdit(id) {
+            const isNew = (id === '__new__');
+            const task = isNew ? { ...pendingNewTask } : allTasks.find(t => t.id === id);
+            if (!task) { cancelEdit(); return; }
+
+            task.title = document.getElementById("modalTitle").value.trim();
+            task.memo  = document.getElementById("modalMemo").value.trim();
+            const rawUrl = document.getElementById("modalUrl").value;
+            const norm = normalizeUrl(rawUrl);
+            task.url = norm ? encodeURIComponent(norm) : "";
+
+            // 日付
+            const newDate = document.getElementById("modalDate").value;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+                if (isNew || newDate !== task.date) {
+                    const dest = getTasks(newDate);
+                    const maxOrder = dest.length ? Math.max(...dest.map(t => t.order)) : -1;
+                    task.order = maxOrder + 1;
+                    task.date = newDate;
+                }
+            }
+
+            // 見積（全角対応）
+            const rawEst = document.getElementById("modalEstimate").value.trim()
+                .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+            const est = parseInt(rawEst, 10);
+            task.estimate = (isNaN(est) || est <= 0) ? 15 : est;
+
+            // 色
+            const sel = document.querySelector("#modalColorPalette .color-swatch.selected");
+            if (sel) task.color = sel.dataset.color;
+
+            // 完了タスクの開始・終了手編集
+            if (task.done) {
+                const stVal = document.getElementById("modalStartTime").value;
+                const enVal = document.getElementById("modalEndTime").value;
+                if (/^\d{2}:\d{2}$/.test(stVal) && /^\d{2}:\d{2}$/.test(enVal)) {
+                    const base = task.date;
+                    const startMs = new Date(`${base}T${stVal}`).getTime();
+                    let endMs   = new Date(`${base}T${enVal}`).getTime();
+                    if (endMs <= startMs) endMs += 24 * 60 * 60 * 1000;
+                    task.startTime = startMs;
+                    task.actual = Math.max(1, Math.round((endMs - startMs) / 60000));
+                }
+            }
+
+            // 開始時刻固定（未開始・未完了タスクのみ）
+            if (!task.done && task.startTime === 0) {
+                const fixedToggle = document.getElementById("modalFixedToggle");
+                const scheduledInput = document.getElementById("modalScheduledTime");
+                if (fixedToggle.classList.contains("active") && /^\d{2}:\d{2}$/.test(scheduledInput.value)) {
+                    task.scheduledTime = scheduledInput.value;
+                } else {
+                    task.scheduledTime = "";
+                }
+            }
+
+            if (isNew) {
+                allTasks.push(task);
+                syncLocal();
+                apiCall({ action: 'add', task });
+            } else {
+                syncLocal();
+                apiCall({ action: 'update', id, fields: {
+                    title: task.title, memo: task.memo, url: task.url,
+                    date: task.date, estimate: task.estimate, color: task.color,
+                    startTime: task.startTime, actual: task.actual,
+                    done: task.done, order: task.order,
+                    scheduledTime: task.scheduledTime ?? "",
+                }});
+            }
+
+            pendingNewTask = null;
+            editingId = null;
+            document.getElementById("editModal").classList.remove("open");
+            sortTasksByTime(task.date);
+            renderTasks();
+        }
+
+        function updateCalendar() {
+            const view = calendar.view;
+            const start = new Date(view.activeStart);
+            const end = new Date(view.activeEnd);
+            const events = [];
+
+            for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+                const ymd = d.toISOString().slice(0, 10);
+                const { tasks } = buildTimeline(ymd);
+
+                tasks.forEach(t => {
+                    const segs = t.segments || [{ start: t.plannedStart, end: t.plannedEnd }];
+                    segs.forEach(seg => {
+                        events.push({
+                            title: t.title,
+                            start: seg.start,
+                            end: seg.end,
+                            backgroundColor: t.done ? getPaleColor(t.color) : t.color,
+                            borderColor: t.done
+                                ? getPaleColor(t.color)
+                                : (t.startTime > 0 ? "red" : t.color),
+                            extendedProps: { task: t }
+                        });
+                    });
+                });
+            }
+
+            calendar.batchRendering(() => {
+                calendar.removeAllEvents();
+                calendar.addEventSource(events);
+            });
+        }
+
+        // 元の色に対応する淡い色マッピング
+        function getPaleColor(hex) {
+            const paleMap = {
+                "#EF9A9A": "#FFCDD2",
+                "#F48FB1": "#F8BBD0",
+                "#CE93D8": "#E1BEE7",
+                "#B39DDB": "#D1C4E9",
+                "#9FA8DA": "#C5CAE9",
+                "#90CAF9": "#BBDEFB",
+                "#80DEEA": "#B2EBF2",
+                "#80CBC4": "#B2DFDB",
+                "#A5D6A7": "#C8E6C9",
+                "#C5E1A5": "#DCEDC8",
+                "#FFF176": "#FFF9C4",
+                "#FFE082": "#FFECB3"
+            };
+            return paleMap[hex] || "#eeeeee";
+        }
+
+
+        function updateEndTime() {
+            const { latestEnd } = buildTimeline(currentDate);
+            const base = new Date(`${currentDate}T${startTime}`);
+            endTimeDisplay.textContent = latestEnd > base ? latestEnd.toTimeString().slice(0, 5) : '--:--';
+        }
+
+        // 固定タスクを障害物として自由タスクをセグメント分割して配置
+        function placeWithSegments(startDate, durationMin, obstacles) {
+            let remaining = durationMin;
+            let cursor = new Date(startDate);
+            const segments = [];
+
+            for (const obs of obstacles) {
+                if (remaining <= 0) break;
+                if (cursor >= obs.end) continue;
+                if (cursor >= obs.start) {
+                    cursor = new Date(obs.end);
+                    continue;
+                }
+                const availableMin = (obs.start - cursor) / 60000;
+                const consume = Math.min(remaining, availableMin);
+                segments.push({ start: new Date(cursor), end: new Date(cursor.getTime() + consume * 60000) });
+                remaining -= consume;
+                cursor = remaining > 0 ? new Date(obs.end) : new Date(cursor.getTime() + consume * 60000);
+            }
+
+            if (remaining > 0) {
+                segments.push({ start: new Date(cursor), end: new Date(cursor.getTime() + remaining * 60000) });
+                cursor = new Date(cursor.getTime() + remaining * 60000);
+            }
+
+            // estimate=0 などで segments が空になった場合のガード
+            if (segments.length === 0) {
+                segments.push({ start: new Date(cursor), end: new Date(cursor) });
+            }
+
+            return { segments, finalEnd: cursor };
+        }
+
+        // 積み上げ計算
+        function buildTimeline(date, { useNow = true } = {}) {
+            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            // 純粋な待ちタスク（再浮上前）はタイムラインから除外
+            const tasks = getTasks(date).filter(t => !(t.waiting && t.waitUntil > today)).slice().sort((a, b) => a.order - b.order);
+            const startBase = new Date(`${date}T${startTime}`);
+            let latestEnd = startBase;
+            const now = new Date();
+            const result = [];
+
+            // 固定時刻の障害物（未開始・未完了の scheduledTime タスク）を収集
+            const obstacles = tasks
+                .filter(t => !t.done && t.startTime === 0 && t.scheduledTime)
+                .map(t => {
+                    const s = new Date(`${date}T${t.scheduledTime}`);
+                    return { start: s, end: new Date(s.getTime() + t.estimate * 60000) };
+                })
+                .sort((a, b) => a.start - b.start);
+
+            // ① 完了済みタスク → 実時刻で配置、分断なし（重なり許容）
+            tasks.filter(t => t.done).forEach(t => {
+                const start = t.startTime > 0 ? new Date(t.startTime) : new Date(`${date}T${startTime}`);
+                const end = new Date(start.getTime() + (t.actual > 0 ? t.actual : t.estimate) * 60000);
+                const segments = [{ start, end }];
+                result.push({ ...t, plannedStart: start, plannedEnd: end, segments });
+                if (end > latestEnd) latestEnd = end;
+            });
+
+            // ② 開始済み・未完了タスク → 固定タスクで分断
+            tasks.filter(t => !t.done && t.startTime > 0).forEach(t => {
+                const { segments, finalEnd } = placeWithSegments(new Date(t.startTime), t.estimate, obstacles);
+                result.push({ ...t, plannedStart: segments[0].start, plannedEnd: finalEnd, segments });
+                if (finalEnd > latestEnd) latestEnd = finalEnd;
+            });
+
+            // ③ 固定時刻タスク（未開始・未完了）→ scheduledTime に配置、分断なし
+            tasks.filter(t => !t.done && t.startTime === 0 && t.scheduledTime)
+                .sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime))
+                .forEach(t => {
+                    const start = new Date(`${date}T${t.scheduledTime}`);
+                    const end = new Date(start.getTime() + t.estimate * 60000);
+                    const segments = [{ start, end }];
+                    result.push({ ...t, plannedStart: start, plannedEnd: end, segments });
+                });
+
+            // now ジャンプ（current はフリータスクの配置起点なので固定タスクを含まない latestEnd ベース）
+            let current = (useNow && date === today && now > latestEnd) ? now : latestEnd;
+
+            // ④ 自由タスク（未開始・未完了・scheduledTime なし）→ 固定タスクで分断しながら積み上げ
+            tasks.filter(t => !t.done && t.startTime === 0 && !t.scheduledTime)
+                .sort((a, b) => a.order - b.order)
+                .forEach(t => {
+                    const { segments, finalEnd } = placeWithSegments(current, t.estimate, obstacles);
+                    result.push({ ...t, plannedStart: segments[0].start, plannedEnd: finalEnd, segments });
+                    current = finalEnd;
+                });
+
+            // タスクリストの表示順を手動 order に合わせる
+            result.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+            // 終了予定 = 全タスクの plannedEnd の最大値
+            const latestPlannedEnd = result.reduce((max, t) => t.plannedEnd > max ? t.plannedEnd : max, new Date(0));
+            return { tasks: result, latestEnd: latestPlannedEnd > current ? latestPlannedEnd : current };
+        }
+
+        function sortTasksByTime(date) {
+            const { tasks } = buildTimeline(date);
+            tasks.slice()
+                .sort((a, b) => (a.plannedStart?.getTime() ?? Infinity) - (b.plannedStart?.getTime() ?? Infinity))
+                .forEach((t, i) => {
+                    const task = allTasks.find(tt => tt.id === t.id);
+                    if (task) task.order = i;
+                });
+            syncLocal();
+            const ids = allTasks.filter(t => t.date === date)
+                .sort((a, b) => a.order - b.order)
+                .map(t => t.id);
+            apiCall({ action: 'reorder', date, order: ids });
+        }
+
+        document.getElementById('quickAddInput').addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            const title = e.target.value.trim();
+            if (!title) return;
+            const tasks = getTasks(currentDate);
+            const maxOrder = tasks.length ? Math.max(...tasks.map(t => t.order)) : -1;
+            const newTask = {
+                id: Date.now().toString(),
+                date: currentDate,
+                title,
+                memo: '', url: '', done: false, actual: 0, startTime: 0, scheduledTime: '',
+                waiting: false, waitUntil: '',
+                color: colorList[tasks.length % colorList.length],
+                estimate: 15,
+                order: maxOrder + 1,
+                repeatDays: [],
+                templateId: null,
+            };
+            allTasks.push(newTask);
+            syncLocal();
+            apiCall({ action: 'add', task: newTask });
+            sortTasksByTime(currentDate);
+            renderTasks();
+            e.target.value = '';
+        });
+
+        (() => {
+            const bar = document.getElementById('quickAddBar');
+            let reshowTimer = null;
+            function hideBar() {
+                bar.classList.add('hidden');
+                clearTimeout(reshowTimer);
+                reshowTimer = setTimeout(() => bar.classList.remove('hidden'), 2000);
+            }
+            document.addEventListener('pointerdown', (e) => {
+                if (!bar.contains(e.target)) hideBar();
+            });
+        })();
+
+        document.addEventListener("DOMContentLoaded", () => {
+            (async () => {
+                // 認証チェック
+                try {
+                    const authRes = await fetch('/auth', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'check' })
+                    });
+                    const authData = await authRes.json();
+                    if (!authData.ok) { location.href = 'login.html'; return; }
+                } catch (e) {
+                    location.href = 'login.html'; return;
+                }
+
+                await loadTasks();
+
+                const todayStr = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                const migRes = await apiCall({ action: 'migrate_past', today: todayStr });
+                if (migRes?.updated > 0 || migRes?.forcedEnded > 0) {
+                    await loadTasks();
+                }
+
+                const isMobile = window.matchMedia('(max-width: 800px)').matches;
+
+                // SQLiteから正規値を取得（localStorage はキャッシュ・フォールバック）
+                const userSettings = await apiCall({ action: 'get_settings' }) ?? {};
+
+                if (userSettings['startTime'] != null) {
+                    startTime = userSettings['startTime'];
+                    localStorage.setItem('startTime', startTime);
+                    document.getElementById("startTimeDisplay").textContent = startTime;
+                }
+
+                const slotLevel = parseInt(userSettings['slotHeightLevel'] ?? localStorage.getItem('slotHeightLevel') ?? '3');
+                localStorage.setItem('slotHeightLevel', String(slotLevel));
+                document.documentElement.style.setProperty('--slot-height', SLOT_HEIGHTS[slotLevel - 1] + 'px');
+
+                autoStartNext = (userSettings['autoStartNext'] ?? localStorage.getItem('autoStartNext') ?? '0') === '1';
+                if (userSettings['autoStartNext'] != null) localStorage.setItem('autoStartNext', userSettings['autoStartNext']);
+
+                let weekdaysOnly = !isMobile && ((userSettings['weekdaysOnly'] ?? localStorage.getItem('weekdaysOnly')) === '1');
+                if (userSettings['weekdaysOnly'] != null) localStorage.setItem('weekdaysOnly', userSettings['weekdaysOnly']);
+                document.getElementById('weekdayBtn').classList.toggle('active', weekdaysOnly);
+
+                const savedView = isMobile ? 'timeGridDay' : (userSettings['calendarView'] ?? localStorage.getItem('calendarView') ?? 'timeGridDay');
+                if (userSettings['calendarView'] != null) localStorage.setItem('calendarView', userSettings['calendarView']);
+
+                const titleEl = document.getElementById("calendarTitle");
+                calendar = new FullCalendar.Calendar(document.getElementById("fc"), {
+                    initialView: savedView,
+                    weekends: !weekdaysOnly,
+                    height: '100%',
+                    slotMinTime: startTime + ":00",
+                    slotMaxTime: "33:00:00",
+                    scrollTime: (() => {
+                        const now = new Date();
+                        const nowMins = now.getHours() * 60 + now.getMinutes();
+                        const [sh, sm] = startTime.split(':').map(Number);
+                        const startMins = sh * 60 + (sm || 0);
+                        if (nowMins <= startMins) return startTime + ":00";
+                        const h = String(now.getHours()).padStart(2, '0');
+                        const m = String(now.getMinutes()).padStart(2, '0');
+                        return h + ":" + m + ":00";
+                    })(),
+                    nowIndicator: true,
+                    allDaySlot: false,
+                    locale: 'ja',
+                    editable: false,
+                    eventOverlap: true,
+                    eventOrderStrict: true,
+                    eventOrder: 'start,-duration,allDay,title',
+                    datesSet(info) {
+                        const viewType = info.view.type;
+                        const youbi = ["日", "月", "火", "水", "木", "金", "土"];
+                        if (viewType === 'timeGridDay') {
+                            const startStr = info.startStr.slice(0, 10);
+                            currentDate = startStr;
+                            const s = new Date(startStr);
+                            titleEl.textContent = `${s.getMonth() + 1}/${s.getDate()}(${youbi[s.getDay()]})`;
+                        } else if (viewType === 'timeGridWeek') {
+                            const s = new Date(info.startStr.slice(0, 10));
+                            const e = new Date(info.endStr.slice(0, 10));
+                            e.setDate(e.getDate() - 1);
+                            titleEl.textContent = `${s.getMonth()+1}/${s.getDate()}(${youbi[s.getDay()]})〜${e.getMonth()+1}/${e.getDate()}(${youbi[e.getDay()]})`;
+                        } else if (viewType === 'dayGridMonth') {
+                            const cur = info.view.currentStart;
+                            titleEl.textContent = `${cur.getFullYear()}年${cur.getMonth()+1}月`;
+                        }
+                        document.querySelectorAll('.view-btn[data-view]').forEach(btn => {
+                            btn.classList.toggle('active', btn.dataset.view === viewType);
+                        });
+                        // 週表示の日境界線を JS で付与（ヘッダー・タイムライン統一方式）
+                        requestAnimationFrame(() => {
+                            // ヘッダー: 絶対配置 div をセル直下に挿入（border-leftより正確に揃う）
+                            document.querySelectorAll('#fc .fc-col-header-cell').forEach((el) => {
+                                el.querySelectorAll('.fc-week-lane-divider').forEach(d => d.remove());
+                                if (viewType === 'timeGridWeek') {
+                                    el.style.position = 'relative';
+                                    const div = document.createElement('div');
+                                    div.className = 'fc-week-lane-divider';
+                                    el.insertBefore(div, el.firstChild);
+                                } else {
+                                    el.style.position = '';
+                                }
+                            });
+                            // タイムライン列: 全列（i=0 含む）に挿入（軸の border-right を置き換え）
+                            document.querySelectorAll('#fc .fc-timegrid-col').forEach((el) => {
+                                el.querySelectorAll('.fc-week-lane-divider').forEach(d => d.remove());
+                                if (viewType === 'timeGridWeek') {
+                                    const frame = el.querySelector('.fc-timegrid-col-frame') ?? el;
+                                    const div = document.createElement('div');
+                                    div.className = 'fc-week-lane-divider';
+                                    frame.insertBefore(div, frame.firstChild);
+                                }
+                            });
+                        });
+                        sortTasksByTime(currentDate);
+                        renderTasks();
+                    },
+                    eventDidMount(info) {
+                        const el = info.el;
+                        const task = info.event.extendedProps.task;
+
+                        // 開始・終了時間をフォーマット
+                        const formatTime = date => {
+                            const d = new Date(date);
+                            return d.toTimeString().slice(0, 5); // "HH:MM"
+                        };
+
+                        const start = formatTime(info.event.start);
+                        const end = formatTime(info.event.end);
+
+                        // HTMLのtitle属性に情報を表示
+                        el.title = task.memo
+                            ? `${start}-${end}\n${task.title}\n${task.memo}\n${task.done ? `見積 ${task.estimate}分 実績 ${task.actual}分` : `見積 ${task.estimate}分`}`
+                            : `${start}-${end}\n${task.title}\n${task.done ? `見積 ${task.estimate}分 実績 ${task.actual}分` : `見積 ${task.estimate}分`}`;
+                    }
+                });
+                calendar.render();
+                requestAnimationFrame(() => calendar.updateSize());
+
+                // BFCache（戻るボタン）からの復元時にスロット高さを再適用
+                window.addEventListener('pageshow', async (event) => {
+                    if (!event.persisted) return;
+                    const fresh = await apiCall({ action: 'get_settings' }) ?? {};
+                    const lvl = parseInt(fresh['slotHeightLevel'] ?? localStorage.getItem('slotHeightLevel') ?? '3');
+                    localStorage.setItem('slotHeightLevel', String(lvl));
+                    document.documentElement.style.setProperty('--slot-height', SLOT_HEIGHTS[lvl - 1] + 'px');
+                    if (calendar) calendar.updateSize();
+                });
+
+                document.getElementById("prevBtn").onclick = () => { calendar.prev(); };
+                document.getElementById("nextBtn").onclick = () => { calendar.next(); };
+                document.querySelectorAll('.view-btn[data-view]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        calendar.changeView(btn.dataset.view);
+                        localStorage.setItem('calendarView', btn.dataset.view);
+                        apiCall({ action: 'save_setting', key: 'calendarView', value: btn.dataset.view });
+                    });
+                });
+                document.getElementById('weekdayBtn').addEventListener('click', () => {
+                    weekdaysOnly = !weekdaysOnly;
+                    document.getElementById('weekdayBtn').classList.toggle('active', weekdaysOnly);
+                    calendar.setOption('weekends', !weekdaysOnly);
+                    localStorage.setItem('weekdaysOnly', weekdaysOnly ? '1' : '0');
+                    apiCall({ action: 'save_setting', key: 'weekdaysOnly', value: weekdaysOnly ? '1' : '0' });
+                });
+
+                new Sortable(tasksEl, {
+                    animation: 150,
+                    handle: ".drag-handle",
+                    onEnd: () => {
+                        const ids = [...tasksEl.children]
+                            .map(div => div.dataset.id)
+                            .filter(Boolean);
+                        ids.forEach((id, index) => {
+                            const task = allTasks.find(t => t.id === id);
+                            if (task) task.order = index;
+                        });
+                        syncLocal();
+                        apiCall({ action: 'reorder', date: currentDate, order: ids });
+                        updateCalendar();
+                        renderTasks();
+                    }
+                });
+
+                document.getElementById("dashboardBtn").addEventListener("click", () => {
+                    location.href = 'dashboard.html';
+                });
+
+                document.getElementById("settingsBtn").addEventListener("click", () => {
+                    location.href = 'setting.html';
+                });
+
+                document.getElementById("modalCancelBtn").addEventListener("click", cancelEdit);
+                document.getElementById("modalSaveBtn").addEventListener("click", () => saveEdit(editingId));
+                document.getElementById("editModal").addEventListener("click", e => {
+                    if (e.target === document.getElementById("editModal")) cancelEdit();
+                });
+
+                document.getElementById("modalFixedToggle").addEventListener("click", () => {
+                    const btn = document.getElementById("modalFixedToggle");
+                    const inp = document.getElementById("modalScheduledTime");
+                    const active = btn.classList.toggle("active");
+                    btn.textContent = active ? "開始時刻: 固定" : "開始時刻: 固定しない";
+                    inp.style.display = active ? "" : "none";
+                    if (active && !inp.value) {
+                        inp.value = new Date().toTimeString().slice(0, 5);
+                    }
+                });
+
+                function addNewTask() {
+                    const tasks = getTasks(currentDate);
+                    pendingNewTask = {
+                        id: Date.now().toString(),
+                        date: currentDate,
+                        title: "",
+                        memo: "",
+                        url: "",
+                        done: false,
+                        color: colorList[tasks.length % colorList.length],
+                        estimate: 15,
+                        actual: 0,
+                        order: tasks.length,
+                        startTime: 0,
+                        scheduledTime: "",
+                        waiting: false,
+                        waitUntil: "",
+                    };
+                    editingId = '__new__';
+
+                    document.getElementById("modalDate").value = pendingNewTask.date;
+                    document.getElementById("modalDate").disabled = false;
+                    document.getElementById("modalTitle").value = "";
+                    document.getElementById("modalEstimate").value = 15;
+                    document.getElementById("modalUrl").value = "";
+                    document.getElementById("modalMemo").value = "";
+                    document.getElementById("modalTimeRow").style.display = "none";
+
+                    const fixedRow = document.getElementById("modalFixedRow");
+                    const fixedToggle = document.getElementById("modalFixedToggle");
+                    const scheduledInput = document.getElementById("modalScheduledTime");
+                    fixedRow.style.display = "flex";
+                    fixedToggle.classList.remove("active");
+                    fixedToggle.textContent = "開始時刻: 固定しない";
+                    scheduledInput.style.display = "none";
+                    scheduledInput.value = "";
+
+                    const palette = document.getElementById("modalColorPalette");
+                    palette.innerHTML = colorList.map(c =>
+                        `<div class="color-swatch${c === pendingNewTask.color ? ' selected' : ''}" style="background:${c}" data-color="${c}"></div>`
+                    ).join('');
+                    palette.querySelectorAll(".color-swatch").forEach(s => {
+                        s.addEventListener("click", () => {
+                            palette.querySelectorAll(".color-swatch").forEach(x => x.classList.remove("selected"));
+                            s.classList.add("selected");
+                        });
+                    });
+
+                    document.getElementById("editModal").classList.add("open");
+                    setTimeout(() => document.getElementById("modalTitle")?.focus(), 50);
+                }
+
+                // Alt+N で追加（入力中は無効）
+                window.addEventListener("keydown", (e) => {
+                    const tag = (e.target && e.target.tagName) || "";
+                    const typing =
+                        e.target?.isContentEditable ||
+                        tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+                    if (typing) return;             // 入力中は発火しない
+                    if (e.repeat) return;           // 長押しの連打防止
+                    if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "n") {
+                        e.preventDefault();           // 既定動作を抑止（可能なら）
+                        addNewTask();
+                    }
+                });
+
+                // 待ちモーダルのイベント
+                document.getElementById('waitModalCancelBtn').addEventListener('click', () => {
+                    waitingTargetId = null;
+                    document.getElementById('waitModal').style.display = 'none';
+                });
+                document.getElementById('waitModalSaveBtn').addEventListener('click', () => {
+                    const date = document.getElementById('waitModalDate').value;
+                    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+                    const task = allTasks.find(t => t.id === waitingTargetId);
+                    if (task) {
+                        const newTitle = document.getElementById('waitModalTitle').value.trim();
+                        if (newTitle) task.title = newTitle;
+                        task.waiting = true;
+                        task.waitUntil = date;
+                        syncLocal();
+                        apiCall({ action: 'update', id: waitingTargetId, fields: {
+                            title: task.title, waiting: true, waitUntil: date
+                        }});
+                        renderTasks();
+                    }
+                    waitingTargetId = null;
+                    document.getElementById('waitModal').style.display = 'none';
+                });
+                document.getElementById('waitModal').addEventListener('click', e => {
+                    if (e.target === document.getElementById('waitModal')) {
+                        waitingTargetId = null;
+                        document.getElementById('waitModal').style.display = 'none';
+                    }
+                });
+
+                // 開始時刻固定タスクの自動開始・自動終了
+                checkAutoScheduled();
+                setInterval(checkAutoScheduled, 30000);
+            })();
+
+        });
+
+        function escapeHTML(str) {
+            return (str ?? "").replace(/[&<>"']/g, s => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+            }[s]));
+        }
+    </script>
+    <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');</script>
+</body>
+
+</html>

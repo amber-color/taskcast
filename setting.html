@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>設定 - TaskTracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#333333">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TaskTracker">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <style>
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+        body {
+            background: #f5f5f7;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #333;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .back-btn:hover { background: #f0f0f0; }
+        .header h1 { margin: 0; font-size: 18px; color: #333; }
+        .content { padding: 24px 20px; max-width: 480px; margin: 0 auto; flex: 1; overflow-y: auto; overscroll-behavior: none; width: 100%; }
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .section h2 {
+            margin: 0 0 16px;
+            font-size: 14px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+        .setting-row label { font-size: 15px; color: #333; }
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 26px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 26px; transition: background 0.2s; cursor: pointer; }
+        .toggle-slider::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .toggle-switch input:checked + .toggle-slider { background: #333; }
+        .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+        .setting-row input[type="time"] {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+        }
+        .setting-row input[type="time"]:focus { border-color: #555; }
+        .slot-height-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .slot-height-row input[type="range"] {
+            width: 120px;
+            accent-color: #333;
+        }
+        .slot-label {
+            font-size: 12px;
+            color: #888;
+            min-width: 12px;
+        }
+        .logout-btn {
+            width: 100%;
+            padding: 12px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .logout-btn:hover { background: #d32f2f; }
+
+        /* Template list */
+        .tpl-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .tpl-item:last-child { border-bottom: none; }
+        .tpl-item-info { flex: 1; min-width: 0; }
+        .tpl-item-title {
+            font-size: 15px;
+            color: #333;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tpl-item-desc { font-size: 12px; color: #888; margin-top: 2px; }
+        .tpl-item-actions { display: flex; gap: 8px; flex-shrink: 0; margin-left: 8px; }
+        .tpl-item-actions button {
+            background: none;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 13px;
+            cursor: pointer;
+            color: #333;
+        }
+        .tpl-item-actions button:hover { background: #f0f0f0; }
+        .add-tpl-btn {
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: background 0.2s;
+        }
+        .add-tpl-btn:hover { background: #555; }
+
+        /* Template modal */
+        #tplModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            align-items: flex-start;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 20px 12px;
+        }
+        #tplModal.open { display: flex; }
+        #tplModalBox {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: auto;
+        }
+        #tplModalBox h3 { margin: 0 0 4px; font-size: 16px; color: #333; }
+        .tpl-row { display: flex; gap: 8px; align-items: center; }
+        .tpl-row label {
+            font-size: 13px;
+            color: #555;
+            white-space: nowrap;
+            min-width: 76px;
+        }
+        .tpl-row input, .tpl-row select, .tpl-row textarea {
+            flex: 1;
+            padding: 7px 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+        }
+        .tpl-row input:focus, .tpl-row select:focus, .tpl-row textarea:focus { border-color: #555; }
+        .tpl-row textarea { resize: vertical; min-height: 56px; }
+        .tpl-section-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            border-top: 1px solid #eee;
+            padding-top: 8px;
+            margin-top: 2px;
+        }
+        .tpl-dow-group { display: flex; gap: 6px; flex-wrap: wrap; padding: 2px 0; }
+        .tpl-dow-group label {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 13px;
+            color: #333;
+            min-width: unset;
+            cursor: pointer;
+        }
+        .tpl-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 4px;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+        .tpl-modal-footer button {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        #tplCancelBtn { background: #e0e0e5; color: #333; }
+        #tplSaveBtn   { background: #333; color: #fff; }
+        #tplSaveBtn:hover { background: #555; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <button class="back-btn" onclick="location.href='index.html'">‹</button>
+    <h1>設定</h1>
+</div>
+
+<div class="content">
+    <div class="section">
+        <h2>時刻</h2>
+        <div class="setting-row">
+            <label>開始時刻</label>
+            <input type="time" id="startTimeInput">
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>繰り返しテンプレート</h2>
+        <div id="templateList">
+            <p id="templateEmpty" style="color:#aaa;font-size:14px;margin:0;">テンプレートはありません</p>
+        </div>
+        <button class="add-tpl-btn" id="addTemplateBtn">＋ テンプレートを追加</button>
+    </div>
+
+    <div class="section">
+        <h2>カレンダー</h2>
+        <div class="setting-row">
+            <label>スロット高さ</label>
+            <div class="slot-height-row">
+                <span class="slot-label">小</span>
+                <input type="range" id="slotHeightInput" min="1" max="5" step="1">
+                <span class="slot-label">大</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>タスク</h2>
+        <div class="setting-row">
+            <label>完了後に次のタスクを自動開始</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="autoStartNextInput">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="section">
+        <button class="logout-btn" id="logoutBtn">ログアウト</button>
+    </div>
+</div>
+
+<!-- Template editor modal -->
+<div id="tplModal">
+  <div id="tplModalBox">
+    <h3 id="tplModalTitle">テンプレートを追加</h3>
+
+    <div class="tpl-row"><label>タイトル</label><input type="text" id="tplTitle" placeholder="タスク名"></div>
+    <div class="tpl-row"><label>見積（分）</label><input type="number" id="tplEstimate" value="15" min="1"></div>
+    <div class="tpl-row"><label>URL</label><input type="url" id="tplUrl" placeholder="https://..."></div>
+    <div class="tpl-row"><label>メモ</label><textarea id="tplMemo" placeholder="省略可"></textarea></div>
+    <div class="tpl-row"><label>固定開始時刻</label><input type="time" id="tplFixedStart"></div>
+    <div class="tpl-row">
+        <label>色</label>
+        <div id="tplColorPalette" style="display:flex;flex-wrap:wrap;gap:4px;flex:1;"></div>
+    </div>
+
+    <div class="tpl-section-label">繰り返し設定</div>
+
+    <div class="tpl-row">
+        <label>頻度</label>
+        <select id="tplFrequency">
+            <option value="daily">毎日</option>
+            <option value="weekly">毎週</option>
+            <option value="monthly">毎月</option>
+            <option value="yearly">毎年</option>
+            <option value="custom">カスタム</option>
+        </select>
+    </div>
+
+    <div class="tpl-row" id="tplIntervalRow">
+        <label>間隔</label>
+        <input type="number" id="tplInterval" value="1" min="1" style="width:70px;flex:none;">
+        <select id="tplUnit" style="display:none;">
+            <option value="day">日</option>
+            <option value="week">週</option>
+            <option value="month">月</option>
+            <option value="year">年</option>
+        </select>
+        <span id="tplIntervalUnit" style="font-size:13px;color:#555;margin-left:4px;"></span>
+    </div>
+
+    <div id="tplDowRow" style="display:none;">
+        <div class="tpl-dow-group">
+            <label><input type="checkbox" class="dow-cb" value="0">日</label>
+            <label><input type="checkbox" class="dow-cb" value="1">月</label>
+            <label><input type="checkbox" class="dow-cb" value="2">火</label>
+            <label><input type="checkbox" class="dow-cb" value="3">水</label>
+            <label><input type="checkbox" class="dow-cb" value="4">木</label>
+            <label><input type="checkbox" class="dow-cb" value="5">金</label>
+            <label><input type="checkbox" class="dow-cb" value="6">土</label>
+        </div>
+    </div>
+
+    <div id="tplMonthlySection" style="display:none;">
+        <div class="tpl-row">
+            <label>月次タイプ</label>
+            <select id="tplMonthlyType">
+                <option value="day_of_month">毎月N日</option>
+                <option value="nth_weekday">第N曜日</option>
+                <option value="last_weekday">最終曜日</option>
+            </select>
+        </div>
+        <div class="tpl-row" id="tplMonthlyDayRow">
+            <label>日</label>
+            <input type="number" id="tplMonthlyDay" value="1" min="1" max="31">
+        </div>
+        <div class="tpl-row" id="tplMonthlyNthRow" style="display:none;">
+            <label>第</label>
+            <input type="number" id="tplMonthlyNth" value="1" min="1" max="5" style="width:60px;flex:none;">
+            <select id="tplMonthlyWeekday" style="flex:1;">
+                <option value="0">日曜</option><option value="1">月曜</option>
+                <option value="2">火曜</option><option value="3">水曜</option>
+                <option value="4">木曜</option><option value="5">金曜</option>
+                <option value="6">土曜</option>
+            </select>
+        </div>
+        <div class="tpl-row" id="tplMonthlyLastRow" style="display:none;">
+            <label>最終</label>
+            <select id="tplMonthlyLastWeekday">
+                <option value="0">日曜</option><option value="1">月曜</option>
+                <option value="2">火曜</option><option value="3">水曜</option>
+                <option value="4">木曜</option><option value="5">金曜</option>
+                <option value="6">土曜</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="tplYearlySection" style="display:none;">
+        <div class="tpl-row">
+            <label>月</label>
+            <select id="tplYearlyMonth">
+                <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+                <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+                <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+                <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+            </select>
+        </div>
+        <div class="tpl-row">
+            <label>日</label>
+            <input type="number" id="tplYearlyDay" value="1" min="1" max="31">
+        </div>
+    </div>
+
+    <div class="tpl-row">
+        <label>開始日</label>
+        <input type="date" id="tplStartDate">
+    </div>
+
+    <div class="tpl-row">
+        <label>終了条件</label>
+        <select id="tplEndType">
+            <option value="never">終了なし</option>
+            <option value="until_date">日付まで</option>
+            <option value="count">回数</option>
+        </select>
+    </div>
+    <div class="tpl-row" id="tplEndDateRow" style="display:none;">
+        <label>終了日</label>
+        <input type="date" id="tplEndDate">
+    </div>
+    <div class="tpl-row" id="tplEndCountRow" style="display:none;">
+        <label>回数</label>
+        <input type="number" id="tplEndCount" value="10" min="1">
+    </div>
+
+    <div class="tpl-modal-footer">
+        <button id="tplCancelBtn">キャンセル</button>
+        <button id="tplSaveBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+    const COLOR_LIST = [
+        "#EF9A9A","#F48FB1","#CE93D8","#B39DDB","#9FA8DA","#90CAF9",
+        "#80DEEA","#80CBC4","#A5D6A7","#C5E1A5","#FFF176","#FFE082"
+    ];
+    let templates = [];
+    let editingId = null;
+    let selectedColor = COLOR_LIST[0];
+
+    function escapeHTML(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c =>
+            ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    }
+
+    async function apiCall(body, keepalive = false) {
+        try {
+            const res = await fetch('/api', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+                keepalive
+            });
+            if (res.status === 401) { location.href = 'login.html'; return null; }
+            return await res.json();
+        } catch (e) {
+            console.error('API error:', e);
+            return null;
+        }
+    }
+
+    function describeRule(rule) {
+        if (!rule) return '';
+        const dow = ['日','月','火','水','木','金','土'];
+        const n = rule.interval || 1;
+        switch (rule.frequency) {
+            case 'daily':   return n === 1 ? '毎日' : `${n}日ごと`;
+            case 'weekly': {
+                const days = (rule.daysOfWeek || []).map(d => dow[d]).join('・');
+                return n === 1 ? `毎週 ${days}` : `${n}週ごと ${days}`;
+            }
+            case 'monthly': return n === 1 ? '毎月' : `${n}ヶ月ごと`;
+            case 'yearly':  return n === 1 ? '毎年' : `${n}年ごと`;
+            case 'custom': {
+                const u = {day:'日',week:'週',month:'月',year:'年'}[rule.unit] || '';
+                return `${n}${u}ごと`;
+            }
+        }
+        return '';
+    }
+
+    async function loadTemplates() {
+        const emptyEl = document.getElementById('templateEmpty');
+        emptyEl.textContent = 'テンプレートはありません';
+        const result = await apiCall({ action: 'list_templates' });
+        if (!Array.isArray(result)) {
+            // API失敗時はlocalStorageキャッシュにフォールバック
+            const cached = JSON.parse(localStorage.getItem('tpl_cache') ?? 'null');
+            if (Array.isArray(cached)) {
+                templates = cached;
+                renderTemplateList();
+            } else {
+                emptyEl.style.display = '';
+                emptyEl.textContent = '⚠ 読み込みエラー（ページを再読み込みしてください）';
+            }
+            console.error('list_templates result:', result);
+            return;
+        }
+        templates = result;
+        localStorage.setItem('tpl_cache', JSON.stringify(result));
+        renderTemplateList();
+    }
+
+    function renderTemplateList() {
+        const list = document.getElementById('templateList');
+        const empty = document.getElementById('templateEmpty');
+        list.querySelectorAll('.tpl-item').forEach(el => el.remove());
+        empty.style.display = templates.length ? 'none' : '';
+        templates.forEach(tpl => {
+            const item = document.createElement('div');
+            item.className = 'tpl-item';
+            item.innerHTML = `
+                <div class="tpl-item-info">
+                    <div class="tpl-item-title">
+                        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;
+                            background:${escapeHTML(tpl.color)};margin-right:6px;vertical-align:middle;"></span>
+                        ${escapeHTML(tpl.title || '（無題）')}
+                    </div>
+                    <div class="tpl-item-desc">${escapeHTML(describeRule(tpl.rule))} • ${tpl.estimate}分</div>
+                </div>
+                <div class="tpl-item-actions">
+                    <button data-edit="${tpl.id}">編集</button>
+                    <button data-del="${tpl.id}" style="color:#c00;">削除</button>
+                </div>`;
+            item.querySelector('[data-edit]').addEventListener('click', () => openEdit(tpl.id));
+            item.querySelector('[data-del]').addEventListener('click', () => deleteTpl(tpl.id));
+            list.appendChild(item);
+        });
+    }
+
+    function buildColorPalette(current) {
+        const palette = document.getElementById('tplColorPalette');
+        palette.innerHTML = '';
+        COLOR_LIST.forEach(c => {
+            const sw = document.createElement('div');
+            sw.style.cssText = `width:20px;height:20px;border-radius:4px;cursor:pointer;background:${c};
+                border:2px solid ${c === current ? '#333' : 'transparent'}`;
+            sw.addEventListener('click', () => {
+                palette.querySelectorAll('div').forEach(s => s.style.borderColor = 'transparent');
+                sw.style.borderColor = '#333';
+                selectedColor = c;
+            });
+            palette.appendChild(sw);
+        });
+        selectedColor = current;
+    }
+
+    function updateRecurrenceUI() {
+        const freq = document.getElementById('tplFrequency').value;
+        const unit = document.getElementById('tplUnit').value;
+        const monthlyType = document.getElementById('tplMonthlyType').value;
+
+        const unitLabels = { daily:'日', weekly:'週', monthly:'ヶ月', yearly:'年' };
+        document.getElementById('tplIntervalUnit').textContent = unitLabels[freq] || '';
+        document.getElementById('tplUnit').style.display = freq === 'custom' ? '' : 'none';
+
+        const showDow = freq === 'weekly' || (freq === 'custom' && unit === 'week');
+        document.getElementById('tplDowRow').style.display = showDow ? '' : 'none';
+        document.getElementById('tplMonthlySection').style.display = freq === 'monthly' ? '' : 'none';
+        document.getElementById('tplYearlySection').style.display = freq === 'yearly' ? '' : 'none';
+
+        document.getElementById('tplMonthlyDayRow').style.display =
+            monthlyType === 'day_of_month' ? '' : 'none';
+        document.getElementById('tplMonthlyNthRow').style.display =
+            monthlyType === 'nth_weekday' ? '' : 'none';
+        document.getElementById('tplMonthlyLastRow').style.display =
+            monthlyType === 'last_weekday' ? '' : 'none';
+    }
+
+    function updateEndUI() {
+        const v = document.getElementById('tplEndType').value;
+        document.getElementById('tplEndDateRow').style.display  = v === 'until_date' ? '' : 'none';
+        document.getElementById('tplEndCountRow').style.display = v === 'count'      ? '' : 'none';
+    }
+
+    document.getElementById('tplFrequency').addEventListener('change', updateRecurrenceUI);
+    document.getElementById('tplUnit').addEventListener('change', updateRecurrenceUI);
+    document.getElementById('tplMonthlyType').addEventListener('change', updateRecurrenceUI);
+    document.getElementById('tplEndType').addEventListener('change', updateEndUI);
+
+    function resetForm() {
+        document.getElementById('tplTitle').value = '';
+        document.getElementById('tplEstimate').value = 15;
+        document.getElementById('tplUrl').value = '';
+        document.getElementById('tplMemo').value = '';
+        document.getElementById('tplFixedStart').value = '';
+        document.getElementById('tplFrequency').value = 'daily';
+        document.getElementById('tplInterval').value = 1;
+        document.getElementById('tplUnit').value = 'day';
+        document.getElementById('tplMonthlyType').value = 'day_of_month';
+        document.getElementById('tplMonthlyDay').value = 1;
+        document.getElementById('tplMonthlyNth').value = 1;
+        document.getElementById('tplMonthlyWeekday').value = 0;
+        document.getElementById('tplMonthlyLastWeekday').value = 0;
+        document.getElementById('tplYearlyMonth').value = 1;
+        document.getElementById('tplYearlyDay').value = 1;
+        document.getElementById('tplStartDate').value = new Date().toISOString().slice(0,10);
+        document.getElementById('tplEndType').value = 'never';
+        document.getElementById('tplEndDate').value = '';
+        document.getElementById('tplEndCount').value = 10;
+        document.querySelectorAll('.dow-cb').forEach(cb => cb.checked = false);
+        buildColorPalette(COLOR_LIST[0]);
+        updateRecurrenceUI();
+        updateEndUI();
+    }
+
+    document.getElementById('addTemplateBtn').addEventListener('click', () => {
+        editingId = null;
+        document.getElementById('tplModalTitle').textContent = 'テンプレートを追加';
+        resetForm();
+        document.getElementById('tplModal').classList.add('open');
+    });
+
+    function openEdit(id) {
+        const tpl = templates.find(t => t.id === id);
+        if (!tpl) return;
+        editingId = id;
+        document.getElementById('tplModalTitle').textContent = 'テンプレートを編集';
+        const r = tpl.rule || {};
+        document.getElementById('tplTitle').value      = tpl.title || '';
+        document.getElementById('tplEstimate').value   = tpl.estimate || 15;
+        document.getElementById('tplUrl').value        = tpl.url || '';
+        document.getElementById('tplMemo').value       = tpl.memo || '';
+        document.getElementById('tplFixedStart').value = tpl.fixedStartTime || '';
+        document.getElementById('tplFrequency').value  = r.frequency || 'daily';
+        document.getElementById('tplInterval').value   = r.interval || 1;
+        document.getElementById('tplUnit').value       = r.unit || 'day';
+        document.getElementById('tplMonthlyType').value   = r.monthlyType || 'day_of_month';
+        document.getElementById('tplMonthlyDay').value    = r.monthlyDay || 1;
+        document.getElementById('tplMonthlyNth').value    = r.monthlyNth || 1;
+        document.getElementById('tplMonthlyWeekday').value     = r.monthlyWeekday ?? 0;
+        document.getElementById('tplMonthlyLastWeekday').value = r.monthlyWeekday ?? 0;
+        document.getElementById('tplYearlyMonth').value = r.yearlyMonth || 1;
+        document.getElementById('tplYearlyDay').value   = r.yearlyDay || 1;
+        document.getElementById('tplStartDate').value   = r.startDate || '';
+        document.getElementById('tplEndType').value     = r.endType || 'never';
+        document.getElementById('tplEndDate').value     = r.endDate || '';
+        document.getElementById('tplEndCount').value    = r.endCount || 10;
+        document.querySelectorAll('.dow-cb').forEach(cb => {
+            cb.checked = (r.daysOfWeek || []).includes(parseInt(cb.value));
+        });
+        buildColorPalette(tpl.color || COLOR_LIST[0]);
+        updateRecurrenceUI();
+        updateEndUI();
+        document.getElementById('tplModal').classList.add('open');
+    }
+
+    async function deleteTpl(id) {
+        if (!confirm('このテンプレートを削除しますか？\n今日以降の未来インスタンスも削除されます。')) return;
+        const result = await apiCall({ action: 'delete_template', id });
+        if (result?.ok) {
+            templates = templates.filter(t => t.id !== id);
+            localStorage.setItem('tpl_cache', JSON.stringify(templates));
+            renderTemplateList();
+        } else {
+            alert('削除に失敗しました: ' + (result?.error || '不明なエラー'));
+        }
+    }
+
+    function buildRule() {
+        const freq = document.getElementById('tplFrequency').value;
+        const rule = {
+            frequency: freq,
+            interval:  Math.max(1, parseInt(document.getElementById('tplInterval').value) || 1),
+            startDate: document.getElementById('tplStartDate').value,
+            endType:   document.getElementById('tplEndType').value,
+        };
+        if (rule.endType === 'until_date') rule.endDate  = document.getElementById('tplEndDate').value;
+        if (rule.endType === 'count')      rule.endCount = Math.max(1, parseInt(document.getElementById('tplEndCount').value) || 1);
+
+        if (freq === 'custom') rule.unit = document.getElementById('tplUnit').value;
+
+        const needDow = freq === 'weekly' || (freq === 'custom' && document.getElementById('tplUnit').value === 'week');
+        if (needDow) {
+            rule.daysOfWeek = [...document.querySelectorAll('.dow-cb:checked')].map(cb => parseInt(cb.value));
+        }
+        if (freq === 'monthly') {
+            rule.monthlyType = document.getElementById('tplMonthlyType').value;
+            if (rule.monthlyType === 'day_of_month') {
+                rule.monthlyDay = parseInt(document.getElementById('tplMonthlyDay').value) || 1;
+            } else if (rule.monthlyType === 'nth_weekday') {
+                rule.monthlyNth     = parseInt(document.getElementById('tplMonthlyNth').value) || 1;
+                rule.monthlyWeekday = parseInt(document.getElementById('tplMonthlyWeekday').value);
+            } else {
+                rule.monthlyWeekday = parseInt(document.getElementById('tplMonthlyLastWeekday').value);
+            }
+        }
+        if (freq === 'yearly') {
+            rule.yearlyMonth = parseInt(document.getElementById('tplYearlyMonth').value) || 1;
+            rule.yearlyDay   = parseInt(document.getElementById('tplYearlyDay').value) || 1;
+        }
+        return rule;
+    }
+
+    document.getElementById('tplSaveBtn').addEventListener('click', async () => {
+        const title = document.getElementById('tplTitle').value.trim();
+        if (!title) { alert('タイトルを入力してください'); return; }
+
+        const rule = buildRule();
+        if (!rule.startDate) { alert('開始日を入力してください'); return; }
+        const needDow = rule.frequency === 'weekly' ||
+            (rule.frequency === 'custom' && rule.unit === 'week');
+        if (needDow && !(rule.daysOfWeek?.length)) {
+            alert('曜日を1つ以上選択してください'); return;
+        }
+
+        const template = {
+            title,
+            estimate:       Math.max(1, parseInt(document.getElementById('tplEstimate').value) || 15),
+            url:            document.getElementById('tplUrl').value.trim(),
+            memo:           document.getElementById('tplMemo').value.trim(),
+            fixedStartTime: document.getElementById('tplFixedStart').value,
+            color:          selectedColor,
+            rule,
+        };
+        if (editingId) template.id = editingId;
+
+        const result = await apiCall({ action: 'save_template', template });
+        if (!result?.ok) {
+            alert('保存に失敗しました: ' + (result?.error || '不明なエラー'));
+            return;
+        }
+        if (editingId) {
+            templates = templates.map(t => t.id === editingId ? result.template : t);
+        } else {
+            templates.push(result.template);
+        }
+        localStorage.setItem('tpl_cache', JSON.stringify(templates));
+        renderTemplateList();
+        document.getElementById('tplModal').classList.remove('open');
+    });
+
+    document.getElementById('tplCancelBtn').addEventListener('click', () => {
+        document.getElementById('tplModal').classList.remove('open');
+    });
+    document.getElementById('tplModal').addEventListener('click', e => {
+        if (e.target === document.getElementById('tplModal'))
+            document.getElementById('tplModal').classList.remove('open');
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const res = await fetch('/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'check' })
+            });
+            const data = await res.json();
+            if (!data.ok) { location.href = 'login.html'; return; }
+        } catch (e) {
+            location.href = 'login.html'; return;
+        }
+
+        const startTimeInput = document.getElementById('startTimeInput');
+        const slotHeightInput = document.getElementById('slotHeightInput');
+        const autoStartNextInput = document.getElementById('autoStartNextInput');
+
+        // まずlocalStorageで即時表示
+        startTimeInput.value = localStorage.getItem('startTime') ?? '09:00';
+        slotHeightInput.value = localStorage.getItem('slotHeightLevel') ?? '3';
+        autoStartNextInput.checked = (localStorage.getItem('autoStartNext') ?? '0') === '1';
+
+        // SQLiteから正規値を取得してlocalStorageと同期
+        const userSettings = await apiCall({ action: 'get_settings' }) ?? {};
+        if (userSettings['startTime'] != null) {
+            startTimeInput.value = userSettings['startTime'];
+            localStorage.setItem('startTime', userSettings['startTime']);
+        }
+        if (userSettings['slotHeightLevel'] != null) {
+            slotHeightInput.value = userSettings['slotHeightLevel'];
+            localStorage.setItem('slotHeightLevel', userSettings['slotHeightLevel']);
+        }
+        if (userSettings['autoStartNext'] != null) {
+            autoStartNextInput.checked = userSettings['autoStartNext'] === '1';
+            localStorage.setItem('autoStartNext', userSettings['autoStartNext']);
+        }
+
+        // 変更時はSQLiteとlocalStorage両方に保存
+        startTimeInput.addEventListener('change', () => {
+            localStorage.setItem('startTime', startTimeInput.value);
+            apiCall({ action: 'save_setting', key: 'startTime', value: startTimeInput.value });
+        });
+        slotHeightInput.addEventListener('change', () => {
+            localStorage.setItem('slotHeightLevel', slotHeightInput.value);
+            apiCall({ action: 'save_setting', key: 'slotHeightLevel', value: slotHeightInput.value }, true);
+        });
+        autoStartNextInput.addEventListener('change', () => {
+            const val = autoStartNextInput.checked ? '1' : '0';
+            localStorage.setItem('autoStartNext', val);
+            apiCall({ action: 'save_setting', key: 'autoStartNext', value: val });
+        });
+
+        // BFCache（ブラウザの戻るボタン）からの復元時に設定を再読み込み
+        window.addEventListener('pageshow', async (event) => {
+            if (event.persisted) {
+                const fresh = await apiCall({ action: 'get_settings' }) ?? {};
+                startTimeInput.value = fresh['startTime'] ?? localStorage.getItem('startTime') ?? '09:00';
+                slotHeightInput.value = fresh['slotHeightLevel'] ?? localStorage.getItem('slotHeightLevel') ?? '3';
+                await loadTemplates();
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await fetch('/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'logout' })
+            });
+            localStorage.clear();
+            location.href = 'login.html';
+        });
+
+        await loadTemplates();
+    });
+</script>
+<script>if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');</script>
+</body>
+</html>
