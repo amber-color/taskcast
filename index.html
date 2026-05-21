@@ -61,14 +61,22 @@
             width: 100%;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
         }
 
-        #calendarControls {
+        #navGroup {
+            flex: 1;
             display: flex;
             align-items: center;
+            justify-content: flex-end;
             gap: 6px;
+            min-width: 0;
+        }
+
+        #controlsGroup {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         /* ‹ › ナビゲーション */
@@ -94,8 +102,7 @@
             font-size: 13px;
             font-weight: 600;
             color: #333;
-            width: 130px;
-            text-align: right;
+            white-space: nowrap;
             user-select: none;
         }
 
@@ -219,8 +226,8 @@
             .omit-text { display: none; }
             #viewSwitcher { display: none; }
             #weekdayBtn { display: none; }
-            #topBarInner { gap: 8px; }
-            #calendarControls { gap: 6px; }
+            #navGroup { gap: 4px; }
+            #controlsGroup { gap: 6px; }
         }
 
         #tasks {
@@ -716,24 +723,26 @@
         <div id="todayArea">
             <div id="mobileBar">
                 <div id="topBarInner">
-                    <div id="calendarControls">
+                    <div id="navGroup">
                         <button id="prevBtn">‹</button>
                         <span id="calendarTitle"></span>
                         <button id="nextBtn">›</button>
+                    </div>
+                    <div id="controlsGroup">
                         <div id="viewSwitcher">
                             <button class="view-btn active" data-view="timeGridDay">日</button>
                             <button class="view-btn" data-view="timeGridWeek">週</button>
                             <button class="view-btn" data-view="dayGridMonth">月</button>
                         </div>
                         <button id="weekdayBtn">平日</button>
-                    </div>
-                    <div id="timebar">
+                        <div id="timebar">
                         <button id="dashboardBtn" title="ダッシュボード"><svg viewBox="0 0 12 10" width="14" height="14" fill="currentColor"><rect x="0" y="4" width="3" height="6" rx="0.5"/><rect x="4.5" y="2" width="3" height="8" rx="0.5"/><rect x="9" y="0" width="3" height="10" rx="0.5"/></svg></button>
                         <div style="font-size:13px;line-height:1.5;color:#555;">
                             <span>開始 <span id="startTimeDisplay">09:00</span></span>
                             <br><span>終了 <span id="endTimeDisplay">--:--</span></span>
                         </div>
                         <button id="settingsBtn" title="設定"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></button>
+                        </div>
                     </div>
                 </div>
             </div>
