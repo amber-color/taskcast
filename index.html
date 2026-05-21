@@ -291,6 +291,28 @@
             animation: breathe 1.8s ease-in-out infinite;
         }
 
+        .task-completing {
+            position: relative;
+            overflow: hidden;
+            pointer-events: none;
+            transition: height 0.4s ease, opacity 0.35s ease, margin-bottom 0.4s ease, padding 0.4s ease;
+        }
+        .task-complete-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: rgba(255,255,255,0.9);
+            animation: checkPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes checkPop {
+            0%   { transform: scale(0); opacity: 0; }
+            70%  { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1);   opacity: 1; }
+        }
+
         #quickAddBar {
             position: fixed;
             bottom: 20px;
@@ -1151,15 +1173,37 @@
             task.done = true;
             syncLocal();
             apiCall({ action: 'update', id, fields: { done: true, actual: task.actual } });
-            renderTasks();
-            requestAnimationFrame(() => refreshNowIndicator());
-            if (autoStartNext) {
-                const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
-                const next = allTasks
-                    .filter(t => t.date === today && !t.done && t.startTime === 0)
-                    .sort((a, b) => a.order - b.order)[0];
-                if (next) startTask(next.id);
-            }
+
+            const afterRender = () => {
+                renderTasks();
+                requestAnimationFrame(() => refreshNowIndicator());
+                if (autoStartNext) {
+                    const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                    const next = allTasks
+                        .filter(t => t.date === today && !t.done && t.startTime === 0)
+                        .sort((a, b) => a.order - b.order)[0];
+                    if (next) startTask(next.id);
+                }
+            };
+
+            const card = document.querySelector(`[data-id="${id}"]`);
+            if (!card) { afterRender(); return; }
+
+            card.style.height = card.offsetHeight + 'px';
+            card.classList.add('task-completing');
+            const overlay = document.createElement('div');
+            overlay.className = 'task-complete-overlay';
+            overlay.textContent = '✓';
+            card.appendChild(overlay);
+
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                card.style.height = '0';
+                card.style.opacity = '0';
+                card.style.marginBottom = '0';
+                card.style.padding = '0';
+            }));
+
+            setTimeout(afterRender, 500);
         }
 
         function checkAutoScheduled() {
