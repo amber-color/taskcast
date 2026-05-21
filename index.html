@@ -435,21 +435,16 @@
             display: flex;
             width: 100%;
             margin-top: 6px;
-            background: #fff;
-            border-radius: 8px;
-            overflow: hidden;
-            /* 丸みからはみ出る角を隠す */
         }
 
         .task-actions button {
             flex: 1 1 25%;
             border: none;
-            border-right: 1px solid #eee;
             padding: 5px 0;
-            color: #555;
+            color: rgba(0,0,0,0.45);
             background: none;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: color 0.15s;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -460,13 +455,8 @@
             height: 14px;
         }
 
-        /* 最後のボタンは右ボーダーなし */
-        .task-actions button:last-child {
-            border-right: none;
-        }
-
         .task-actions button:hover {
-            background: #f0f0f0;
+            color: rgba(0,0,0,0.75);
         }
 
         .color-palette {
@@ -977,6 +967,7 @@
                     return `
               <button onclick="interruptTask('${task.id}')" title="中断">${SVG.pause}</button>
               <button onclick="waitTask('${task.id}')" title="待ちにする">${SVG.wait}</button>
+              <button onclick="editTask('${task.id}')" title="編集">${SVG.edit}</button>
               <button onclick="finishTask('${task.id}')" title="完了">${SVG.check}</button>`;
                 } else {
                     return `
