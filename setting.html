@@ -47,7 +47,8 @@
         }
         .back-btn:hover { background: #f0f0f0; }
         .header h1 { margin: 0; font-size: 18px; color: #333; }
-        .content { padding: 24px 20px; max-width: 480px; margin: 0 auto; flex: 1; overflow-y: auto; overscroll-behavior: none; width: 100%; }
+        .scroll-wrapper { flex: 1; overflow-y: auto; overscroll-behavior: none; }
+        .content { padding: 24px 20px; max-width: 480px; margin: 0 auto; width: 100%; }
         .section {
             background: white;
             border-radius: 12px;
@@ -275,6 +276,7 @@
     <h1>設定</h1>
 </div>
 
+<div class="scroll-wrapper">
 <div class="content">
     <div class="section">
         <h2>時刻</h2>
@@ -333,6 +335,7 @@
     <div class="section">
         <button class="logout-btn" id="logoutBtn">ログアウト</button>
     </div>
+</div>
 </div>
 
 <!-- Template editor modal -->
