@@ -1008,6 +1008,11 @@
             const normalTasks = timedTasks.filter(t => !t.done);
             const doneTasks   = timedTasks.filter(t => t.done);
 
+            // 今日を表示中のとき、過去日付から再浮上した待ちタスクも表示
+            const resurfacedFromPast = currentDate === today
+                ? allTasks.filter(t => !t.done && t.waiting && t.waitUntil && t.waitUntil <= today && t.date < today)
+                : [];
+
             tasksEl.innerHTML = "";
 
             // 完了フォルダー（リスト最上部、スクロール追従）
@@ -1035,6 +1040,7 @@
             }
 
             normalTasks.forEach(task => tasksEl.appendChild(renderTaskCard(task, today, true)));
+            resurfacedFromPast.forEach(task => tasksEl.appendChild(renderTaskCard(task, today, false)));
 
             if (waitingTasks.length > 0) {
                 const waitFolder = document.createElement('div');
