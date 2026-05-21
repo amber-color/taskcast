@@ -1024,7 +1024,7 @@
                     return `
               <button onclick="editTask('${task.id}')" title="編集">${SVG.edit}</button>
               <button onclick="deleteTask('${task.id}')" title="削除">${SVG.trash}</button>`;
-                } else if (task.waiting) {
+                } else if (task.waiting && !isResurfacing) {
                     return `
               <button onclick="unwaitTask('${task.id}')" title="待ちを解除">${SVG.unwait}</button>
               <button onclick="editTask('${task.id}')" title="編集">${SVG.edit}</button>
