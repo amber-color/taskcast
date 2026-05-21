@@ -234,7 +234,40 @@
         #tplCancelBtn { background: #e0e0e5; color: #333; }
         #tplSaveBtn   { background: #333; color: #fff; }
         #tplSaveBtn:hover { background: #555; }
+
+        /* ダークテーマ */
+        html.dark body { background: #111213; color: #e0e0e0; }
+        html.dark .header { background: #1c1c1e; border-bottom-color: #2e2e2e; }
+        html.dark .header h1 { color: #e0e0e0; }
+        html.dark .back-btn { color: #aaa; }
+        html.dark .back-btn:hover { background: rgba(255,255,255,0.07); }
+        html.dark .section { background: #1c1c1e; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+        html.dark .section h2 { color: #555; }
+        html.dark .setting-row label { color: #e0e0e0; }
+        html.dark .setting-row input[type="time"],
+        html.dark .setting-row input[type="number"] { background: #2c2c2e; border-color: #3a3a3a; color: #e0e0e0; }
+        html.dark .toggle-slider { background: #3a3a3a; }
+        html.dark .toggle-switch input:checked + .toggle-slider { background: #aaa; }
+        html.dark .slot-label { color: #666; }
+        html.dark .tpl-item { border-bottom-color: #2e2e2e; }
+        html.dark .tpl-item-title { color: #e0e0e0; }
+        html.dark .tpl-item-desc { color: #666; }
+        html.dark .tpl-item-actions button { border-color: #3a3a3a; color: #aaa; background: none; }
+        html.dark .tpl-item-actions button:hover { background: rgba(255,255,255,0.07); }
+        html.dark .add-tpl-btn { background: #2c2c2e; color: #e0e0e0; }
+        html.dark .add-tpl-btn:hover { background: #38383a; }
+        html.dark #tplModal { background: rgba(0,0,0,0.7); }
+        html.dark #tplModalBox { background: #1c1c1e; }
+        html.dark #tplModalBox h3 { color: #e0e0e0; }
+        html.dark .tpl-row label { color: #aaa; }
+        html.dark .tpl-row input, html.dark .tpl-row select, html.dark .tpl-row textarea { background: #2c2c2e; border-color: #3a3a3a; color: #e0e0e0; }
+        html.dark .tpl-section-label { color: #666; border-top-color: #2e2e2e; }
+        html.dark .tpl-dow-group label { color: #aaa; }
+        html.dark .tpl-modal-footer { border-top-color: #2e2e2e; }
+        html.dark #tplCancelBtn { background: #2c2c2e; color: #aaa; }
+        html.dark #tplSaveBtn { background: #aaa; color: #111; }
     </style>
+    <script>if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark');</script>
 </head>
 <body>
 <div class="header">
@@ -277,6 +310,21 @@
             <label>完了後に次のタスクを自動開始</label>
             <label class="toggle-switch">
                 <input type="checkbox" id="autoStartNextInput">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="setting-row">
+            <label>デフォルト見積り時間（分）</label>
+            <input type="number" id="defaultEstimateInput" min="1" max="999" style="width:72px;padding:6px 10px;border:1px solid #ccc;border-radius:8px;font-size:15px;text-align:right;outline:none;">
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>テーマ</h2>
+        <div class="setting-row">
+            <label>ダークモード</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="darkModeInput">
                 <span class="toggle-slider"></span>
             </label>
         </div>
@@ -743,11 +791,15 @@
         const startTimeInput = document.getElementById('startTimeInput');
         const slotHeightInput = document.getElementById('slotHeightInput');
         const autoStartNextInput = document.getElementById('autoStartNextInput');
+        const defaultEstimateInput = document.getElementById('defaultEstimateInput');
+        const darkModeInput = document.getElementById('darkModeInput');
 
         // まずlocalStorageで即時表示
         startTimeInput.value = localStorage.getItem('startTime') ?? '09:00';
         slotHeightInput.value = localStorage.getItem('slotHeightLevel') ?? '3';
         autoStartNextInput.checked = (localStorage.getItem('autoStartNext') ?? '0') === '1';
+        defaultEstimateInput.value = localStorage.getItem('defaultEstimate') ?? '15';
+        darkModeInput.checked = localStorage.getItem('theme') === 'dark';
 
         // SQLiteから正規値を取得してlocalStorageと同期
         const userSettings = await apiCall({ action: 'get_settings' }) ?? {};
@@ -763,6 +815,15 @@
             autoStartNextInput.checked = userSettings['autoStartNext'] === '1';
             localStorage.setItem('autoStartNext', userSettings['autoStartNext']);
         }
+        if (userSettings['defaultEstimate'] != null) {
+            defaultEstimateInput.value = userSettings['defaultEstimate'];
+            localStorage.setItem('defaultEstimate', userSettings['defaultEstimate']);
+        }
+        if (userSettings['theme'] != null) {
+            darkModeInput.checked = userSettings['theme'] === 'dark';
+            localStorage.setItem('theme', userSettings['theme']);
+            document.documentElement.classList.toggle('dark', userSettings['theme'] === 'dark');
+        }
 
         // 変更時はSQLiteとlocalStorage両方に保存
         startTimeInput.addEventListener('change', () => {
@@ -777,6 +838,18 @@
             const val = autoStartNextInput.checked ? '1' : '0';
             localStorage.setItem('autoStartNext', val);
             apiCall({ action: 'save_setting', key: 'autoStartNext', value: val });
+        });
+        defaultEstimateInput.addEventListener('change', () => {
+            const val = String(Math.max(1, parseInt(defaultEstimateInput.value) || 15));
+            defaultEstimateInput.value = val;
+            localStorage.setItem('defaultEstimate', val);
+            apiCall({ action: 'save_setting', key: 'defaultEstimate', value: val });
+        });
+        darkModeInput.addEventListener('change', () => {
+            const val = darkModeInput.checked ? 'dark' : 'light';
+            localStorage.setItem('theme', val);
+            document.documentElement.classList.toggle('dark', darkModeInput.checked);
+            apiCall({ action: 'save_setting', key: 'theme', value: val });
         });
 
         // BFCache（ブラウザの戻るボタン）からの復元時に設定を再読み込み

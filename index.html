@@ -13,6 +13,7 @@
     <meta name="apple-mobile-web-app-title" content="TaskTracker">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link href="vendor/fullcalendar.min.css" rel="stylesheet">
+    <script>if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark');</script>
     <style>
         * {
             box-sizing: border-box;
@@ -717,6 +718,49 @@
             color: #777;
             margin-left: 4px;
         }
+
+        /* ダークテーマ */
+        html.dark { color-scheme: dark; }
+        html.dark body { background: #111213; color: #e0e0e0; }
+        html.dark #mobileBar { background: #1c1c1e; border-bottom-color: #2e2e2e; }
+        html.dark #calendarTitle { color: #e0e0e0; }
+        html.dark #prevBtn, html.dark #nextBtn { color: #aaa; }
+        html.dark .view-btn { color: #666; }
+        html.dark .view-btn.active { background: #2c2c2e; color: #e0e0e0; box-shadow: 0 1px 4px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(255,255,255,0.06); }
+        html.dark #weekdayBtn { color: #666; }
+        html.dark #weekdayBtn.active { background: #2c2c2e; color: #e0e0e0; box-shadow: 0 1px 4px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(255,255,255,0.06); }
+        html.dark #dashboardBtn, html.dark #settingsBtn { color: #888; }
+        html.dark #tasklist { background: #111213; border-right-color: #2e2e2e; }
+        html.dark #tasks-container { background: #111213; }
+        html.dark .done-folder-header { background: #2c2c2e; color: #666; }
+        html.dark .done-folder-header:hover { background: #38383a; }
+        html.dark .task { color: #222; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+        html.dark .task-meta { color: rgba(0,0,0,0.5); }
+        html.dark .task .memo { color: rgba(0,0,0,0.5); }
+        html.dark .task-wait-date { color: rgba(0,0,0,0.45); }
+        html.dark .resurface-badge { color: rgba(0,0,0,0.55); }
+        html.dark .section-divider { background: #2c2c2e; color: #555; border-top-color: #2e2e2e; border-bottom-color: #2e2e2e; }
+        html.dark #quickAddBar { background: #2c2c2e; border-color: #3a3a3a; }
+        html.dark #quickInput { background: #1c1c1e; color: #e0e0e0; border-color: #3a3a3a; }
+        html.dark #quickInput::placeholder { color: #555; }
+        html.dark #editModal { background: rgba(0,0,0,0.7); }
+        html.dark #editModalBox { background: #1c1c1e; }
+        html.dark #editModalBox h3 { color: #e0e0e0; }
+        html.dark #editModalBox input, html.dark #editModalBox textarea { background: #2c2c2e; border-color: #3a3a3a; color: #e0e0e0; }
+        html.dark .modal-row label { color: #aaa; }
+        html.dark #settingsModal > div, html.dark #waitModal > div { background: #1c1c1e; }
+        html.dark #waitModal textarea, html.dark #waitModal input { background: #2c2c2e; border-color: #3a3a3a; color: #e0e0e0; }
+        html.dark #waitModalCancelBtn { background: #2c2c2e; color: #aaa; }
+        html.dark #waitModalSaveBtn { background: #aaa; color: #111; }
+        html.dark #calendar { background: #111213; }
+        html.dark .fc-theme-standard td, html.dark .fc-theme-standard th { border-color: #2e2e2e; }
+        html.dark .fc-theme-standard .fc-scrollgrid { border-color: #2e2e2e; }
+        html.dark .fc-col-header-cell { background: #1c1c1e; }
+        html.dark .fc-col-header-cell-cushion { color: #777; text-decoration: none; }
+        html.dark .fc-timegrid-slot-label-cushion { color: #555; }
+        html.dark .fc-timegrid-col { background: #111213; }
+        html.dark .fc-scrollgrid-sync-inner { background: #111213; }
+        html.dark #timebar { color: #aaa; }
     </style>
 </head>
 
@@ -1616,7 +1660,7 @@
                 memo: '', url: '', done: false, actual: 0, startTime: 0, scheduledTime: '',
                 waiting: false, waitUntil: '',
                 color: colorList[tasks.length % colorList.length],
-                estimate: 15,
+                estimate: parseInt(localStorage.getItem('defaultEstimate') ?? '15'),
                 order: maxOrder + 1,
                 repeatDays: [],
                 templateId: null,
@@ -1682,6 +1726,13 @@
 
                 autoStartNext = (userSettings['autoStartNext'] ?? localStorage.getItem('autoStartNext') ?? '0') === '1';
                 if (userSettings['autoStartNext'] != null) localStorage.setItem('autoStartNext', userSettings['autoStartNext']);
+
+                const defaultEstimate = parseInt(userSettings['defaultEstimate'] ?? localStorage.getItem('defaultEstimate') ?? '15');
+                if (userSettings['defaultEstimate'] != null) localStorage.setItem('defaultEstimate', String(defaultEstimate));
+
+                const theme = userSettings['theme'] ?? localStorage.getItem('theme') ?? 'light';
+                if (userSettings['theme'] != null) localStorage.setItem('theme', theme);
+                document.documentElement.classList.toggle('dark', theme === 'dark');
 
                 let weekdaysOnly = !isMobile && ((userSettings['weekdaysOnly'] ?? localStorage.getItem('weekdaysOnly')) === '1');
                 if (userSettings['weekdaysOnly'] != null) localStorage.setItem('weekdaysOnly', userSettings['weekdaysOnly']);
@@ -1864,7 +1915,7 @@
                         url: "",
                         done: false,
                         color: colorList[tasks.length % colorList.length],
-                        estimate: 15,
+                        estimate: parseInt(localStorage.getItem('defaultEstimate') ?? '15'),
                         actual: 0,
                         order: tasks.length,
                         startTime: 0,
@@ -1877,7 +1928,7 @@
                     document.getElementById("modalDate").value = pendingNewTask.date;
                     document.getElementById("modalDate").disabled = false;
                     document.getElementById("modalTitle").value = "";
-                    document.getElementById("modalEstimate").value = 15;
+                    document.getElementById("modalEstimate").value = parseInt(localStorage.getItem('defaultEstimate') ?? '15');
                     document.getElementById("modalUrl").value = "";
                     document.getElementById("modalMemo").value = "";
                     document.getElementById("modalTimeRow").style.display = "none";

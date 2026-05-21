@@ -104,7 +104,23 @@
         }
         .panel { display: none; }
         .panel.active { display: block; }
+
+        html.dark { color-scheme: dark; }
+        html.dark body { background: #111213; }
+        html.dark .card { background: #1c1c1e; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+        html.dark h1 { color: #e0e0e0; }
+        html.dark .tab { color: #555; }
+        html.dark .tab.active { color: #e0e0e0; border-bottom-color: #e0e0e0; }
+        html.dark .tabs { border-bottom-color: #2e2e2e; }
+        html.dark label { color: #aaa; }
+        html.dark input[type="text"], html.dark input[type="password"] { background: #2c2c2e; border-color: #3a3a3a; color: #e0e0e0; }
+        html.dark input:focus { border-color: #888; }
+        html.dark .hint { color: #555; }
+        html.dark button[type="submit"] { background: #aaa; color: #111; }
+        html.dark button[type="submit"]:hover { background: #ccc; }
+        html.dark #errorMsg { color: #ff6b6b; }
     </style>
+    <script>if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark');</script>
 </head>
 <body>
 <div class="card">

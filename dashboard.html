@@ -159,7 +159,24 @@
         .dataTables_wrapper .dataTables_paginate,
         .dataTables_wrapper .dataTables_length,
         .dataTables_wrapper .dataTables_filter { display: none; }
+
+        html.dark { color-scheme: dark; }
+        html.dark body { background: #111213; color: #e0e0e0; }
+        html.dark #header { background: #1c1c1e; border-bottom-color: #2e2e2e; }
+        html.dark #header h1 { color: #e0e0e0; }
+        html.dark #backBtn { color: #aaa; }
+        html.dark #backBtn:hover { background: rgba(255,255,255,0.07); }
+        html.dark .filter-row label { color: #aaa; }
+        html.dark .filter-row input[type="date"] { background: #2c2c2e; border-color: #3a3a3a; color: #e0e0e0; }
+        html.dark .filter-row button { background: #2c2c2e; color: #e0e0e0; }
+        html.dark .filter-row button:hover { background: #38383a; }
+        html.dark .card { background: #1c1c1e; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+        html.dark .section-title { color: #555; }
+        html.dark table.dataTable th, html.dark table.dataTable td { border-bottom-color: #2e2e2e; color: #e0e0e0; }
+        html.dark table.dataTable thead th { color: #555; border-bottom-color: #2e2e2e; }
+        html.dark table.dataTable tbody tr:hover td { background: #2c2c2e; }
     </style>
+    <script>if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark');</script>
 </head>
 <body>
     <div id="header">
