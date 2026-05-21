@@ -1095,11 +1095,15 @@
             const normalTasks = timedTasks.filter(t => !t.done);
             const doneTasks   = timedTasks.filter(t => t.done);
 
-            // 他の日付から再浮上した待ちタスク（waitUntil <= currentDate）
-            // currentDate 当日のタスクは buildTimeline 経由で normalTasks に含まれるので除外
-            const resurfacedFromPast = allTasks.filter(
-                t => !t.done && t.waiting && t.waitUntil && t.waitUntil <= currentDate && t.date !== currentDate
-            );
+            // 他の日付から再浮上した待ちタスク
+            // waitUntil 当日 → 表示、waitUntil を過ぎて今日表示中 → 持ち越し表示
+            // それ以外（waitUntil より後の日を閲覧中など）→ 表示しない
+            const resurfacedFromPast = allTasks.filter(t => {
+                if (t.done || !t.waiting || !t.waitUntil || t.date === currentDate) return false;
+                if (t.waitUntil === currentDate) return true;           // waitUntil 当日
+                if (t.waitUntil < today && currentDate === today) return true; // 持ち越し（今日のみ）
+                return false;
+            });
 
             tasksEl.innerHTML = "";
 
