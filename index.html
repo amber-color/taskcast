@@ -1844,6 +1844,12 @@
                         const el = info.el;
                         const task = info.event.extendedProps.task;
 
+                        // 実行中タスクに赤枠
+                        if (task.startTime > 0 && !task.done && !task.waiting) {
+                            el.style.outline = '2px solid red';
+                            el.style.outlineOffset = '-1px';
+                        }
+
                         // 開始・終了時間をフォーマット
                         const formatTime = date => {
                             const d = new Date(date);
