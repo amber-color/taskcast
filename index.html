@@ -1087,18 +1087,19 @@
             const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
             let { tasks: timedTasks } = buildTimeline(currentDate);
 
-            // 純粋な待ちタスク（timeline から除外済み）を取得
-            const waitingTasks = getTasks(currentDate)
-                .filter(t => !t.done && t.waiting && t.waitUntil > today)
+            // 待ちタスク：全日付から waitUntil が currentDate より未来のもの
+            const waitingTasks = allTasks
+                .filter(t => !t.done && t.waiting && t.waitUntil && t.waitUntil > currentDate)
                 .sort((a, b) => (a.waitUntil || '').localeCompare(b.waitUntil || ''));
 
             const normalTasks = timedTasks.filter(t => !t.done);
             const doneTasks   = timedTasks.filter(t => t.done);
 
-            // 今日を表示中のとき、過去日付から再浮上した待ちタスクも表示
-            const resurfacedFromPast = currentDate === today
-                ? allTasks.filter(t => !t.done && t.waiting && t.waitUntil && t.waitUntil <= today && t.date < today)
-                : [];
+            // 他の日付から再浮上した待ちタスク（waitUntil <= currentDate）
+            // currentDate 当日のタスクは buildTimeline 経由で normalTasks に含まれるので除外
+            const resurfacedFromPast = allTasks.filter(
+                t => !t.done && t.waiting && t.waitUntil && t.waitUntil <= currentDate && t.date !== currentDate
+            );
 
             tasksEl.innerHTML = "";
 
