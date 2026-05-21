@@ -1672,12 +1672,12 @@
                     slotMaxTime: "33:00:00",
                     scrollTime: (() => {
                         const now = new Date();
-                        const nowMins = now.getHours() * 60 + now.getMinutes();
+                        const nowMins = now.getHours() * 60 + now.getMinutes() - 60;
                         const [sh, sm] = startTime.split(':').map(Number);
                         const startMins = sh * 60 + (sm || 0);
                         if (nowMins <= startMins) return startTime + ":00";
-                        const h = String(now.getHours()).padStart(2, '0');
-                        const m = String(now.getMinutes()).padStart(2, '0');
+                        const h = String(Math.floor(nowMins / 60)).padStart(2, '0');
+                        const m = String(nowMins % 60).padStart(2, '0');
                         return h + ":" + m + ":00";
                     })(),
                     nowIndicator: true,
