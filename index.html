@@ -575,11 +575,22 @@
         /* メモ内の長いURLを強制改行して崩れを防ぐ */
         .task .memo {
             overflow-wrap: anywhere;
-            /* もっとも強力に折り返す */
             word-break: break-word;
-            /* 古いブラウザ対策 */
             white-space: pre-wrap;
-            /* メモの改行は保持 */
+            font-size: 0.8em;
+            color: #555;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .task .memo.expanded {
+            display: block;
+            overflow: visible;
+        }
+        .task .memo:empty {
+            cursor: default;
         }
 
         /* クリックできるリンクの見た目（任意） */
@@ -1001,6 +1012,10 @@
             </div>
           `;
             div.dataset.id = task.id;
+            if (task.memo) {
+                const memoEl = div.querySelector('.memo');
+                memoEl.addEventListener('click', () => memoEl.classList.toggle('expanded'));
+            }
             return div;
         }
 
