@@ -433,7 +433,7 @@ export async function onRequestPost({ request, env }) {
         const nextRow = await db.prepare(
             'SELECT task_order FROM tasks WHERE user_id=? AND date=? AND done=0 AND start_time=0 AND task_order>? ORDER BY task_order ASC LIMIT 1'
         ).bind(userId, task.date, task.task_order).first();
-        const cloneOrder = nextRow ? nextRow.task_order - 0.5 : task.task_order + 1;
+        const cloneOrder = nextRow ? nextRow.task_order + 0.5 : task.task_order + 1;
         const cloneId    = String(nowMs);
 
         await db.batch([
