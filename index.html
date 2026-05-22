@@ -321,6 +321,13 @@
             70%  { transform: scale(1.2); opacity: 1; }
             100% { transform: scale(1);   opacity: 1; }
         }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .btn-spinner {
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
 
         #quickAddBar {
             position: fixed;
@@ -1253,6 +1260,18 @@
                 alert("開始していないか、すでに完了しています。");
                 return;
             }
+
+            // ボタンをスピナーに切り替え
+            const card = document.querySelector(`.task[data-id="${id}"]`);
+            let pauseBtn = null;
+            if (card) {
+                pauseBtn = card.querySelector('[onclick^="interruptTask"]');
+                if (pauseBtn) {
+                    pauseBtn.innerHTML = `<span class="btn-spinner"><svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 1a6 6 0 0 1 0 12"/></svg></span>`;
+                    pauseBtn.disabled = true;
+                }
+            }
+
             const result = await apiCall({ action: 'interrupt', id, now_ms: Date.now() });
             if (!result) { alert("中断に失敗しました（通信エラー）"); return; }
             if (!result.ok) { alert("中断に失敗しました: " + (result.error || "不明なエラー")); return; }
