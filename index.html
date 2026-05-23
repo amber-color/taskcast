@@ -513,11 +513,12 @@
 
         .fc-timegrid-slot {
             height: var(--slot-height, 90px) !important;
-            background-color: #fff !important;
         }
+        /* カラム側で背景を管理（スロットはz-indexが高いため背景を持たせない） */
+        #calendar .fc-timegrid-col { background: white !important; }
         /* 週表示・月表示の今日ハイライト */
-        #calendar .fc-day-today { background-color: rgba(255,220,40,0.10) !important; }
-        #calendar .fc-timegrid-col.fc-day-today .fc-timegrid-slot { background-color: rgba(255,220,40,0.08) !important; }
+        #calendar .fc-day-today,
+        #calendar .fc-timegrid-col.fc-day-today { background: rgba(255,220,40,0.12) !important; }
 
         .fc-timegrid-slot-label {
             background-color: white !important;
@@ -790,8 +791,9 @@
         html.dark #calendar .fc-daygrid-day { background: #111213 !important; }
         html.dark .fc-daygrid-day-number { color: #777; text-decoration: none; }
         html.dark #calendar .fc-day-today { background: rgba(255,220,40,0.05) !important; }
-        html.dark #calendar .fc-timegrid-col.fc-day-today .fc-timegrid-slot { background-color: rgba(255,220,40,0.04) !important; }
-        html.dark .fc-timegrid-slot { background-color: #111213 !important; }
+        html.dark #calendar .fc-day-today,
+        html.dark #calendar .fc-timegrid-col.fc-day-today { background: rgba(255,220,40,0.06) !important; }
+        html.dark .fc-timegrid-slot { background-color: transparent !important; }
         html.dark .fc-timegrid-slot-label { background-color: #1c1c1e !important; }
         html.dark #timebar { color: #aaa; }
     </style>
