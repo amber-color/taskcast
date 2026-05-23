@@ -520,6 +520,9 @@
         /* 週表示・月表示の今日ハイライト（日表示は除外） */
         #calendar .fc-timeGridWeek-view .fc-timegrid-col.fc-day-today { background: rgba(255,220,40,0.12) !important; }
         #calendar .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame { background: rgba(255,220,40,0.12) !important; }
+        /* 週・月表示: 選択日の強調ボーダー */
+        #calendar .fc-day-selected { outline: 2px solid #888 !important; outline-offset: -2px; }
+        html.dark #calendar .fc-day-selected { outline-color: #aaa !important; }
 
         .fc-timegrid-slot-label {
             background-color: white !important;
@@ -1099,6 +1102,22 @@
             d.className = 'section-divider';
             d.textContent = label;
             tasksEl.appendChild(d);
+        }
+
+        function applySelectedHighlight(dateStr) {
+            document.querySelectorAll('#calendar .fc-day-selected')
+                .forEach(el => el.classList.remove('fc-day-selected'));
+            if (dateStr) {
+                document.querySelectorAll(`#calendar [data-date="${dateStr}"]`)
+                    .forEach(el => el.classList.add('fc-day-selected'));
+            }
+        }
+
+        function setSelectedDay(dateStr) {
+            currentDate = dateStr;
+            applySelectedHighlight(dateStr);
+            sortTasksByTime(currentDate);
+            renderTasks();
         }
 
         function renderTasks() {
@@ -1825,17 +1844,31 @@
                     datesSet(info) {
                         const viewType = info.view.type;
                         const youbi = ["日", "月", "火", "水", "木", "金", "土"];
+                        const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
                         if (viewType === 'timeGridDay') {
                             const startStr = info.startStr.slice(0, 10);
                             currentDate = startStr;
                             const s = new Date(startStr);
                             titleEl.textContent = `${s.getMonth() + 1}/${s.getDate()}(${youbi[s.getDay()]})`;
                         } else if (viewType === 'timeGridWeek') {
-                            const s = new Date(info.startStr.slice(0, 10));
-                            const e = new Date(info.endStr.slice(0, 10));
-                            e.setDate(e.getDate() - 1);
+                            const rangeStart = info.startStr.slice(0, 10);
+                            const rangeEndDate = new Date(info.endStr);
+                            rangeEndDate.setDate(rangeEndDate.getDate() - 1);
+                            const rangeEnd = rangeEndDate.toISOString().slice(0, 10);
+                            if (currentDate < rangeStart || currentDate > rangeEnd) {
+                                currentDate = (today >= rangeStart && today <= rangeEnd) ? today : rangeStart;
+                            }
+                            const s = new Date(rangeStart);
+                            const e = new Date(rangeEnd);
                             titleEl.textContent = `${s.getMonth()+1}/${s.getDate()}(${youbi[s.getDay()]})〜${e.getMonth()+1}/${e.getDate()}(${youbi[e.getDay()]})`;
                         } else if (viewType === 'dayGridMonth') {
+                            const rangeStart = info.startStr.slice(0, 10);
+                            const rangeEndDate = new Date(info.endStr);
+                            rangeEndDate.setDate(rangeEndDate.getDate() - 1);
+                            const rangeEnd = rangeEndDate.toISOString().slice(0, 10);
+                            if (currentDate < rangeStart || currentDate > rangeEnd) {
+                                currentDate = (today >= rangeStart && today <= rangeEnd) ? today : rangeStart;
+                            }
                             const cur = info.view.currentStart;
                             titleEl.textContent = `${cur.getFullYear()}年${cur.getMonth()+1}月`;
                         }
@@ -1866,9 +1899,15 @@
                                     frame.insertBefore(div, frame.firstChild);
                                 }
                             });
+                            // 日以外: 選択日ハイライト再適用
+                            if (viewType !== 'timeGridDay') applySelectedHighlight(currentDate);
                         });
                         sortTasksByTime(currentDate);
                         renderTasks();
+                    },
+                    dateClick(info) {
+                        if (calendar.view.type === 'timeGridDay') return;
+                        setSelectedDay(info.dateStr);
                     },
                     eventDidMount(info) {
                         const el = info.el;
