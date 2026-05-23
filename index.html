@@ -1913,6 +1913,10 @@
                         if (calendar.view.type === 'timeGridDay') return;
                         setSelectedDay(info.dateStr.slice(0, 10));
                     },
+                    eventClick(info) {
+                        if (calendar.view.type === 'timeGridDay') return;
+                        setSelectedDay(info.event.startStr.slice(0, 10));
+                    },
                     eventDidMount(info) {
                         const el = info.el;
                         const task = info.event.extendedProps.task;
