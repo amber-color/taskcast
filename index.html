@@ -418,6 +418,7 @@
             pointer-events: none;
             z-index: 2;
         }
+        html.dark .fc-week-lane-divider { background: #333; }
         /* 週表示: 時間軸列の右ボーダーを非表示（1日目左はdividerで代替） */
         #calendar .fc-timeGridWeek-view .fc-timegrid-axis { border-right: none !important; }
 
@@ -519,6 +520,7 @@
         /* 週表示・月表示の今日ハイライト */
         #calendar .fc-day-today,
         #calendar .fc-timegrid-col.fc-day-today { background: rgba(255,220,40,0.12) !important; }
+        #calendar .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame { background: rgba(255,220,40,0.12) !important; }
 
         .fc-timegrid-slot-label {
             background-color: white !important;
@@ -541,6 +543,9 @@
             color: black;
             font-weight: bold;
         }
+
+        html.dark .fc-event-time { color: #fff !important; }
+        html.dark .fc-event-title { color: #fff; }
 
         .drag-handle {
             cursor: grab;
@@ -790,9 +795,9 @@
         html.dark #calendar .fc-timegrid-col { background: #111213 !important; }
         html.dark #calendar .fc-daygrid-day { background: #111213 !important; }
         html.dark .fc-daygrid-day-number { color: #777; text-decoration: none; }
-        html.dark #calendar .fc-day-today { background: rgba(255,220,40,0.05) !important; }
-        html.dark #calendar .fc-day-today,
-        html.dark #calendar .fc-timegrid-col.fc-day-today { background: rgba(255,220,40,0.06) !important; }
+        html.dark #calendar .fc-timegrid-col.fc-day-today { background: rgba(255,220,40,0.15) !important; }
+        html.dark #calendar .fc-daygrid-day.fc-day-today,
+        html.dark #calendar .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame { background: rgba(255,220,40,0.10) !important; }
         html.dark .fc-timegrid-slot { background-color: transparent !important; }
         html.dark .fc-timegrid-slot-label { background-color: #1c1c1e !important; }
         html.dark #timebar { color: #aaa; }
