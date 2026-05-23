@@ -782,9 +782,10 @@
         html.dark #calendar .fc-scroller-harness,
         html.dark #calendar .fc-timegrid-body,
         html.dark #calendar .fc-daygrid-body,
-        html.dark #calendar .fc-timegrid-slots table,
         html.dark #calendar .fc-timegrid-cols table,
         html.dark #calendar .fc-scrollgrid-section > td { background: #111213 !important; }
+        /* スロットテーブルは透明にして列の背景（今日ハイライト含む）を透過させる */
+        html.dark #calendar .fc-timegrid-slots table { background: transparent !important; }
         html.dark #calendar .fc-col-header-cell,
         html.dark #calendar .fc-col-header { background: #1c1c1e !important; }
         html.dark #calendar .fc-timegrid-axis { background: #1c1c1e !important; }
