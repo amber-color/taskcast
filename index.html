@@ -1115,9 +1115,9 @@
 
         function setSelectedDay(dateStr) {
             currentDate = dateStr;
-            applySelectedHighlight(dateStr);
             sortTasksByTime(currentDate);
             renderTasks();
+            requestAnimationFrame(() => applySelectedHighlight(dateStr));
         }
 
         function renderTasks() {
@@ -1907,7 +1907,7 @@
                     },
                     dateClick(info) {
                         if (calendar.view.type === 'timeGridDay') return;
-                        setSelectedDay(info.dateStr);
+                        setSelectedDay(info.dateStr.slice(0, 10));
                     },
                     eventDidMount(info) {
                         const el = info.el;
