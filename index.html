@@ -252,13 +252,21 @@
 
         .task-meta {
             font-size: 0.78em;
-            color: #888;
+            color: #666;
+        }
+
+        .task-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding-right: 28px;
         }
 
         .task-time {
-            float: right;
             font-size: 0.78em;
-            color: #888;
+            color: #666;
+            margin-left: auto;
+            flex-shrink: 0;
         }
 
         .done {
@@ -1078,10 +1086,13 @@
              ${resurfaceBadge}<strong>${task.url
                     ? `<a class="title-link" href="${decodeURIComponent(task.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(task.title)}</a>`
                     : escapeHTML(task.title)
-                }</strong>${timeSpan}<br>
-              <span class="task-meta">見${task.estimate}分/実${task.done ? task.actual : "?"}分</span>
-              ${waitDateDisplay}
-              ${task.done ? `<span class="task-meta" style="color: ${getDiffColor(task)};">(${formatDiff(task)})</span>` : ''}
+                }</strong><br>
+              <div class="task-meta-row">
+                <span class="task-meta">見${task.estimate}分/実${task.done ? task.actual : "?"}分</span>
+                ${waitDateDisplay}
+                ${task.done ? `<span class="task-meta" style="color: ${getDiffColor(task)};">(${formatDiff(task)})</span>` : ''}
+                ${timeSpan}
+              </div>
               <span class="drag-handle" title="並べ替え">&#9776;</span>
             </div>
             <div>
