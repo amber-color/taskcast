@@ -521,7 +521,7 @@
         #calendar .fc-timeGridWeek-view .fc-timegrid-col.fc-day-today { background: rgba(255,220,40,0.12) !important; }
         #calendar .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame { background: rgba(255,220,40,0.12) !important; }
         /* 週・月表示: 選択日の強調ボーダー */
-        #calendar .fc-day-selected { outline: 2px solid #888 !important; outline-offset: -2px; }
+        #calendar .fc-day-selected { outline: 1px solid #888 !important; outline-offset: -1px; }
         html.dark #calendar .fc-day-selected { outline-color: #aaa !important; }
 
         .fc-timegrid-slot-label {
@@ -1578,10 +1578,14 @@
                 });
             }
 
+            const scroller = document.querySelector('#fc .fc-scroller-liquid-absolute')
+                          || document.querySelector('#fc .fc-scroller');
+            const savedTop = scroller ? scroller.scrollTop : 0;
             calendar.batchRendering(() => {
                 calendar.removeAllEvents();
                 calendar.addEventSource(events);
             });
+            if (scroller && savedTop) requestAnimationFrame(() => { scroller.scrollTop = savedTop; });
         }
 
         // 元の色に対応する淡い色マッピング
