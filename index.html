@@ -257,14 +257,17 @@
             #controlsGroup { gap: 6px; }
             #container { overflow: hidden; }
             #tasklist {
-                flex: 0 0 100%;
-                min-width: 100%;
+                flex: none;
+                min-width: 0;
+                width: 25%;
                 border-right: none;
-                transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+                overflow: hidden;
             }
             #calendar {
-                flex: 0 0 100%;
-                transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+                flex: none;
+                min-width: 0;
+                width: 75%;
+                overflow: hidden;
             }
         }
 
@@ -2207,22 +2210,40 @@
                 }
             })();
 
-            // Mobile horizontal swipe: task list ↔ calendar
+            // Mobile swipe: 3-state panel (tasks only / both / calendar only)
             (function() {
                 const tasklist = document.getElementById('tasklist');
                 const cal = document.getElementById('calendar');
                 const cont = document.getElementById('container');
-                let view = 'tasks';
+
+                // state: 0=tasks only, 1=both (default), 2=calendar only
+                const TASK_W = [100, 25, 0];
+                const CAL_W  = [0,  75, 100];
+                let state = 1;
                 let startX = 0, startY = 0, dragX = 0;
                 let active = false, locked = false, horiz = false;
 
                 function isMobile() { return window.innerWidth <= 800; }
 
-                function snapTo(v, animate) {
-                    view = v;
-                    tasklist.style.transition = cal.style.transition = animate ? '' : 'none';
-                    const pct = v === 'calendar' ? -100 : 0;
-                    tasklist.style.transform = cal.style.transform = `translateX(${pct}%)`;
+                function lerp(a, b, t) { return a + (b - a) * t; }
+
+                function widthsAt(pos) {
+                    const p = Math.max(0, Math.min(2, pos));
+                    const i = Math.min(Math.floor(p), 1);
+                    const t = p - i;
+                    return [lerp(TASK_W[i], TASK_W[i + 1], t), lerp(CAL_W[i], CAL_W[i + 1], t)];
+                }
+
+                function applyWidths(tw, cw, animate) {
+                    const tr = animate ? 'width 0.32s cubic-bezier(0.4,0,0.2,1)' : 'none';
+                    tasklist.style.transition = cal.style.transition = tr;
+                    tasklist.style.width = tw + '%';
+                    cal.style.width = cw + '%';
+                }
+
+                function snapTo(s, animate) {
+                    state = Math.max(0, Math.min(2, s));
+                    applyWidths(TASK_W[state], CAL_W[state], animate);
                 }
 
                 document.addEventListener('touchstart', e => {
@@ -2240,35 +2261,33 @@
                         if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
                         horiz = Math.abs(dx) > Math.abs(dy) * 1.2;
                         locked = true;
-                        if (horiz) tasklist.style.transition = cal.style.transition = 'none';
                     }
                     if (!horiz) return;
                     e.preventDefault();
                     dragX = dx;
-                    const w = cont.offsetWidth;
-                    const base = view === 'calendar' ? -w : 0;
-                    const pct = Math.max(-100, Math.min(0, ((base + dx) / w) * 100));
-                    tasklist.style.transform = cal.style.transform = `translateX(${pct}%)`;
+                    // left swipe (dx < 0) → higher state; right swipe → lower state
+                    const [tw, cw] = widthsAt(state - dragX / cont.offsetWidth);
+                    applyWidths(tw, cw, false);
                 }, { passive: false });
 
                 document.addEventListener('touchend', () => {
                     if (!active || !isMobile()) { active = false; return; }
                     active = false;
                     if (!horiz) return;
-                    const thr = cont.offsetWidth * 0.25;
-                    if (view === 'tasks' && dragX < -thr) snapTo('calendar', true);
-                    else if (view === 'calendar' && dragX > thr) snapTo('tasks', true);
-                    else snapTo(view, true);
+                    const frac = dragX / cont.offsetWidth;
+                    if (frac < -0.25 && state < 2) snapTo(state + 1, true);
+                    else if (frac > 0.25 && state > 0) snapTo(state - 1, true);
+                    else snapTo(state, true);
                 }, { passive: true });
 
                 document.addEventListener('touchcancel', () => {
-                    if (active && isMobile()) { active = false; if (horiz) snapTo(view, true); }
+                    if (active && isMobile()) { active = false; if (horiz) snapTo(state, true); }
                 }, { passive: true });
 
                 window.addEventListener('resize', () => {
                     if (!isMobile()) {
-                        tasklist.style.transform = tasklist.style.transition = '';
-                        cal.style.transform = cal.style.transition = '';
+                        tasklist.style.width = tasklist.style.transition = '';
+                        cal.style.width = cal.style.transition = '';
                     }
                 });
             })();
