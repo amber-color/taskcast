@@ -1901,6 +1901,7 @@
             function renderSuggestions(results) {
                 if (!results.length || !smartEstimate) {
                     qSuggest.style.display = 'none';
+                    qEstimate.value = getDefaultEstimate();
                     return;
                 }
                 qEstimate.value = results[0].total;
