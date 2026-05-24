@@ -280,6 +280,13 @@
                 <span class="toggle-slider"></span>
             </label>
         </div>
+        <div class="setting-row">
+            <label>スマート見積時間</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="smartEstimateInput">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
     </div>
 
     <div class="section">
@@ -743,11 +750,13 @@
         const startTimeInput = document.getElementById('startTimeInput');
         const slotHeightInput = document.getElementById('slotHeightInput');
         const autoStartNextInput = document.getElementById('autoStartNextInput');
+        const smartEstimateInput = document.getElementById('smartEstimateInput');
 
         // まずlocalStorageで即時表示
         startTimeInput.value = localStorage.getItem('startTime') ?? '09:00';
         slotHeightInput.value = localStorage.getItem('slotHeightLevel') ?? '3';
         autoStartNextInput.checked = (localStorage.getItem('autoStartNext') ?? '0') === '1';
+        smartEstimateInput.checked = (localStorage.getItem('smartEstimate') ?? '0') === '1';
 
         // SQLiteから正規値を取得してlocalStorageと同期
         const userSettings = await apiCall({ action: 'get_settings' }) ?? {};
@@ -763,6 +772,10 @@
             autoStartNextInput.checked = userSettings['autoStartNext'] === '1';
             localStorage.setItem('autoStartNext', userSettings['autoStartNext']);
         }
+        if (userSettings['smartEstimate'] != null) {
+            smartEstimateInput.checked = userSettings['smartEstimate'] === '1';
+            localStorage.setItem('smartEstimate', userSettings['smartEstimate']);
+        }
 
         // 変更時はSQLiteとlocalStorage両方に保存
         startTimeInput.addEventListener('change', () => {
@@ -777,6 +790,11 @@
             const val = autoStartNextInput.checked ? '1' : '0';
             localStorage.setItem('autoStartNext', val);
             apiCall({ action: 'save_setting', key: 'autoStartNext', value: val });
+        });
+        smartEstimateInput.addEventListener('change', () => {
+            const val = smartEstimateInput.checked ? '1' : '0';
+            localStorage.setItem('smartEstimate', val);
+            apiCall({ action: 'save_setting', key: 'smartEstimate', value: val });
         });
 
         // BFCache（ブラウザの戻るボタン）からの復元時に設定を再読み込み
