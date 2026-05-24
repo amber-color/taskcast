@@ -1844,13 +1844,17 @@
             // 純粋な待ちタスク（再浮上前）はタイムラインから除外
             let taskList = getTasks(date).filter(t => !(t.waiting && t.waitUntil > today));
             // 今日の場合、他の日付から再浮上したタスクも含める（カレンダー表示用）
+            // 再浮上タスクと通常タスクを別々にソートして連結（order値の衝突を防ぐ）
+            let tasks;
             if (date === today) {
-                const resurfaced = allTasks.filter(t =>
-                    !t.done && t.waiting && t.waitUntil && t.waitUntil <= today && t.date < today
-                );
-                taskList = [...resurfaced, ...taskList];
+                const resurfaced = allTasks
+                    .filter(t => !t.done && t.waiting && t.waitUntil && t.waitUntil <= today && t.date < today)
+                    .sort((a, b) => a.order - b.order);
+                const todaySorted = taskList.slice().sort((a, b) => a.order - b.order);
+                tasks = [...resurfaced, ...todaySorted];
+            } else {
+                tasks = taskList.slice().sort((a, b) => a.order - b.order);
             }
-            const tasks = taskList.slice().sort((a, b) => a.order - b.order);
             const startBase = new Date(`${date}T${startTime}`);
             let latestEnd = startBase;
             const now = new Date();
