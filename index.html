@@ -318,11 +318,25 @@
             margin-bottom: 6px;
         }
         .done-folder-header:hover { background: #d1d5db; }
+        .done-folder-header .folder-arrow {
+            display: inline-block;
+            transition: transform 0.25s ease;
+        }
+        .done-folder-header.open .folder-arrow { transform: rotate(90deg); }
+        .done-folder-body-wrap {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.25s ease;
+            overflow: hidden;
+            margin-bottom: 0;
+        }
+        .done-folder-body-wrap.open { grid-template-rows: 1fr; }
         .done-folder-body {
             display: flex;
             flex-direction: column;
             gap: 6px;
-            margin-bottom: 6px;
+            min-height: 0;
+            padding-bottom: 6px;
         }
 
         @keyframes breathe {
@@ -1258,21 +1272,24 @@
                 folder.className = 'done-folder';
 
                 const header = document.createElement('div');
-                header.className = 'done-folder-header';
-                header.innerHTML = `<span>${doneExpanded ? '▼' : '▶'}</span><span>完了 (${doneTasks.length})</span>`;
+                header.className = 'done-folder-header' + (doneExpanded ? ' open' : '');
+                header.innerHTML = `<span class="folder-arrow">▶</span><span>完了 (${doneTasks.length})</span>`;
+
+                const bodyWrap = document.createElement('div');
+                bodyWrap.className = 'done-folder-body-wrap' + (doneExpanded ? ' open' : '');
+                const body = document.createElement('div');
+                body.className = 'done-folder-body';
+                doneTasks.forEach(task => body.appendChild(renderTaskCard(task, today, true)));
+                bodyWrap.appendChild(body);
+
                 header.addEventListener('click', () => {
                     doneExpanded = !doneExpanded;
-                    renderTasks();
+                    header.classList.toggle('open', doneExpanded);
+                    bodyWrap.classList.toggle('open', doneExpanded);
                 });
+
                 folder.appendChild(header);
-
-                if (doneExpanded) {
-                    const body = document.createElement('div');
-                    body.className = 'done-folder-body';
-                    doneTasks.forEach(task => body.appendChild(renderTaskCard(task, today, true)));
-                    folder.appendChild(body);
-                }
-
+                folder.appendChild(bodyWrap);
                 tasksEl.appendChild(folder);
             }
 
@@ -1284,21 +1301,24 @@
                 waitFolder.className = 'done-folder';
 
                 const waitHeader = document.createElement('div');
-                waitHeader.className = 'done-folder-header';
-                waitHeader.innerHTML = `<span>${waitExpanded ? '▼' : '▶'}</span><span>待ち (${waitingTasks.length})</span>`;
+                waitHeader.className = 'done-folder-header' + (waitExpanded ? ' open' : '');
+                waitHeader.innerHTML = `<span class="folder-arrow">▶</span><span>待ち (${waitingTasks.length})</span>`;
+
+                const waitBodyWrap = document.createElement('div');
+                waitBodyWrap.className = 'done-folder-body-wrap' + (waitExpanded ? ' open' : '');
+                const waitBody = document.createElement('div');
+                waitBody.className = 'done-folder-body';
+                waitingTasks.forEach(task => waitBody.appendChild(renderTaskCard(task, today, false)));
+                waitBodyWrap.appendChild(waitBody);
+
                 waitHeader.addEventListener('click', () => {
                     waitExpanded = !waitExpanded;
-                    renderTasks();
+                    waitHeader.classList.toggle('open', waitExpanded);
+                    waitBodyWrap.classList.toggle('open', waitExpanded);
                 });
+
                 waitFolder.appendChild(waitHeader);
-
-                if (waitExpanded) {
-                    const waitBody = document.createElement('div');
-                    waitBody.className = 'done-folder-body';
-                    waitingTasks.forEach(task => waitBody.appendChild(renderTaskCard(task, today, false)));
-                    waitFolder.appendChild(waitBody);
-                }
-
+                waitFolder.appendChild(waitBodyWrap);
                 tasksEl.appendChild(waitFolder);
             }
 
