@@ -1064,7 +1064,7 @@
                 ? `<span class="task-wait-date">催促: ${waitDateStr}</span>`
                 : '';
 
-            const clockSvg = `<svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" style="vertical-align:-1px;opacity:0.7"><path fill-rule="evenodd" d="M8 2a6 6 0 100 12A6 6 0 008 2zM7.5 5h1v3.5h-1zM8 8h3v1H8z"/></svg>`;
+            const clockSvg = `<svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" style="vertical-align:-1px;opacity:0.7"><rect x="6.5" y="0" width="3" height="2" rx="0.5"/><path d="M11 1.5l1-.7.7 1-1 .7z"/><path fill-rule="evenodd" d="M8 3a5 5 0 100 10A5 5 0 008 3zm-.5 2h1v3.5h-1zm.5 3.5h2.5v1H8z"/></svg>`;
             let metaHtml;
             if (task.done) {
                 metaHtml = `<span class="task-meta">${clockSvg} ${task.estimate}分 → ${task.actual}分 <span style="color:${getDiffColor(task)}">(${formatDiff(task)})</span></span>`;
