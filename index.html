@@ -255,25 +255,6 @@
             color: #666;
         }
 
-        .task-meta-row {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding-right: 28px;
-        }
-
-        .task-time {
-            position: absolute;
-            top: 5px;
-            right: 28px;
-            font-size: 0.78em;
-            color: #666;
-        }
-
-        .task.has-time {
-            padding-top: 20px;
-        }
-
         .done {
             opacity: 0.5;
             /*text-decoration: line-through;*/
@@ -1079,26 +1060,19 @@
             })();
 
             const resurfaceBadge = isResurfacing ? `<span class="resurface-badge">⚠ 再浮上</span>` : '';
-            const timeSpan = showTime && task.plannedStart
-                ? `<span class="task-time">${formatTime(task.plannedStart)}-${formatTime(task.plannedEnd)}</span>`
-                : '';
-            if (timeSpan) div.classList.add('has-time');
             const waitDateDisplay = task.waiting && waitDateStr
                 ? `<span class="task-wait-date">催促: ${waitDateStr}</span>`
                 : '';
 
             div.innerHTML = `
             <div>
-             ${timeSpan}
              ${resurfaceBadge}<strong>${task.url
                     ? `<a class="title-link" href="${decodeURIComponent(task.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(task.title)}</a>`
                     : escapeHTML(task.title)
                 }</strong><br>
-              <div class="task-meta-row">
-                <span class="task-meta">見${task.estimate}分/実${task.done ? task.actual : "?"}分</span>
-                ${waitDateDisplay}
-                ${task.done ? `<span class="task-meta" style="color: ${getDiffColor(task)};">(${formatDiff(task)})</span>` : ''}
-              </div>
+              <span class="task-meta">見${task.estimate}分/実${task.done ? task.actual : "?"}分</span>
+              ${waitDateDisplay}
+              ${task.done ? `<span class="task-meta" style="color: ${getDiffColor(task)};">(${formatDiff(task)})</span>` : ''}
               <span class="drag-handle" title="並べ替え">&#9776;</span>
             </div>
             <div>
