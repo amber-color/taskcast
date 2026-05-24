@@ -1321,8 +1321,16 @@
                 ));
             }
 
-            normalTasks.forEach(task => tasksEl.appendChild(renderTaskCard(task, today, true)));
-            resurfacedFromPast.forEach(task => tasksEl.appendChild(renderTaskCard(task, today, false)));
+            // 表示順を決定: _viewOrder で管理（ドラッグで上書きされる）
+            normalTasks.forEach(task => { task._viewOrder = task.order; });
+            resurfacedFromPast.forEach((task, i) => {
+                if (task._viewOrder === undefined) task._viewOrder = 1e6 + i;
+            });
+            [...normalTasks, ...resurfacedFromPast]
+                .sort((a, b) => a._viewOrder - b._viewOrder)
+                .forEach(task => {
+                    tasksEl.appendChild(renderTaskCard(task, today, task.date === currentDate));
+                });
 
             if (waitingTasks.length > 0) {
                 tasksEl.appendChild(createCollapsibleFolder(
@@ -1384,6 +1392,7 @@
             task.waiting = false;
             task.waitUntil = '';
             if (task.date < today) task.date = today;
+            delete task._viewOrder;
             syncLocal();
             apiCall({ action: 'update', id, fields: { waiting: false, waitUntil: '', date: task.date } });
             renderTasks();
@@ -2300,7 +2309,7 @@
                             .filter(Boolean);
                         ids.forEach((id, index) => {
                             const task = allTasks.find(t => t.id === id);
-                            if (task) task.order = index;
+                            if (task) { task.order = index; task._viewOrder = index; }
                         });
                         syncLocal();
                         apiCall({ action: 'reorder', date: currentDate, order: ids });
