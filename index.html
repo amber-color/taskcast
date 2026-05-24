@@ -1024,6 +1024,43 @@
     <script src="vendor/fullcalendar.min.js"></script>
     <script>
         let allTasks = [];
+
+        // 再浮上タスクの自動配置管理（localStorage: 今日付けで管理、翌日以降は自動リセット）
+        function getResurfacePositioned() {
+            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            try { return new Set(JSON.parse(localStorage.getItem('resurfacePos_' + today) || '[]')); }
+            catch { return new Set(); }
+        }
+        function addToResurfacePositioned(ids) {
+            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            const set = getResurfacePositioned();
+            ids.forEach(id => set.add(id));
+            localStorage.setItem('resurfacePos_' + today, JSON.stringify([...set]));
+        }
+        // 初回再浮上のタスクだけ先頭に配置してDBに保存
+        function autoPositionNewResurfaced() {
+            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            const positioned = getResurfacePositioned();
+            const allResurfaced = allTasks.filter(t =>
+                !t.done && t.waiting && t.waitUntil && t.waitUntil <= today && t.date < today
+            );
+            const newlyResurfaced = allResurfaced.filter(t => !positioned.has(t.id));
+            if (!newlyResurfaced.length) return;
+
+            const existingResurfaced = allResurfaced.filter(t => positioned.has(t.id))
+                .sort((a, b) => a.order - b.order);
+            const todayNormal = allTasks
+                .filter(t => t.date === today && !t.done && !(t.waiting && t.waitUntil > today))
+                .sort((a, b) => a.order - b.order);
+            const ordered = [
+                ...newlyResurfaced.sort((a, b) => a.order - b.order),
+                ...existingResurfaced,
+                ...todayNormal
+            ];
+            ordered.forEach((t, i) => { t.order = i; });
+            apiCall({ action: 'reorder', date: today, order: ordered.map(t => t.id) });
+            addToResurfacePositioned(newlyResurfaced.map(t => t.id));
+        }
         let waitingTargetId = null;
         let lastResurfacedCount = 0;
         let doneExpanded = false;
@@ -1100,6 +1137,7 @@
                         allTasks = await res2.json();
                         taskHistoryCache = null;
                         syncLocal();
+                        autoPositionNewResurfaced();
                         return;
                     }
                 }
@@ -1107,6 +1145,7 @@
                 allTasks = serverTasks;
                 taskHistoryCache = null;
                 syncLocal();
+                autoPositionNewResurfaced();
             } catch (e) {
                 console.error("タスク読み込みエラー:", e);
                 allTasks = JSON.parse(localStorage.getItem("allTasks")) ?? [];
@@ -1297,23 +1336,10 @@
                 .filter(t => !t.done && t.waiting && t.waitUntil && t.waitUntil > currentDate && t.date <= currentDate)
                 .sort((a, b) => (a.waitUntil || '').localeCompare(b.waitUntil || ''));
 
-            const doneTasks = timedTasks.filter(t => t.done);
-
-            // 他の日付から再浮上した待ちタスク
-            // waitUntil 当日 → 表示、waitUntil を過ぎて今日表示中 → 持ち越し表示
-            // それ以外（waitUntil より後の日を閲覧中など）→ 表示しない
-            const resurfacedFromPast = allTasks.filter(t => {
-                if (t.done || !t.waiting || !t.waitUntil || t.date === currentDate) return false;
-                if (t.waitUntil === currentDate) return true;           // waitUntil 当日
-                if (t.waitUntil < today && currentDate === today) return true; // 持ち越し（今日のみ）
-                return false;
-            });
-            const resurfacedIds = new Set(resurfacedFromPast.map(t => t.id));
-
-            // 待ち中タスク（waitUntil が currentDate より未来）と再浮上タスクを除外
-            const normalTasks = timedTasks.filter(t =>
-                !t.done && !(t.waiting && t.waitUntil > currentDate) && !resurfacedIds.has(t.id)
-            );
+            // 再浮上タスクを含む全アクティブタスク（buildTimeline が order でソート済み）
+            // 待ち中（waitUntil > currentDate）は除外、done は除外
+            const activeTasks = timedTasks.filter(t => !t.done && !(t.waiting && t.waitUntil > currentDate));
+            const doneTasks   = timedTasks.filter(t => t.done);
 
             tasksEl.innerHTML = "";
 
@@ -1326,8 +1352,7 @@
                 ));
             }
 
-            resurfacedFromPast.forEach(task => tasksEl.appendChild(renderTaskCard(task, today, false)));
-            normalTasks.forEach(task => tasksEl.appendChild(renderTaskCard(task, today, true)));
+            activeTasks.forEach(task => tasksEl.appendChild(renderTaskCard(task, today, task.date === currentDate)));
 
             if (waitingTasks.length > 0) {
                 tasksEl.appendChild(createCollapsibleFolder(
@@ -1582,6 +1607,7 @@
             const resurfacedCount = allTasks.filter(t => t.waiting && t.waitUntil && t.waitUntil <= todayForWait).length;
             if (resurfacedCount !== lastResurfacedCount) {
                 lastResurfacedCount = resurfacedCount;
+                autoPositionNewResurfaced();
                 changed = true;
             }
 
@@ -1844,17 +1870,13 @@
             // 純粋な待ちタスク（再浮上前）はタイムラインから除外
             let taskList = getTasks(date).filter(t => !(t.waiting && t.waitUntil > today));
             // 今日の場合、他の日付から再浮上したタスクも含める（カレンダー表示用）
-            // 再浮上タスクと通常タスクを別々にソートして連結（order値の衝突を防ぐ）
-            let tasks;
             if (date === today) {
-                const resurfaced = allTasks
-                    .filter(t => !t.done && t.waiting && t.waitUntil && t.waitUntil <= today && t.date < today)
-                    .sort((a, b) => a.order - b.order);
-                const todaySorted = taskList.slice().sort((a, b) => a.order - b.order);
-                tasks = [...resurfaced, ...todaySorted];
-            } else {
-                tasks = taskList.slice().sort((a, b) => a.order - b.order);
+                const resurfaced = allTasks.filter(t =>
+                    !t.done && t.waiting && t.waitUntil && t.waitUntil <= today && t.date < today
+                );
+                taskList = [...resurfaced, ...taskList];
             }
+            const tasks = taskList.slice().sort((a, b) => a.order - b.order);
             const startBase = new Date(`${date}T${startTime}`);
             let latestEnd = startBase;
             const now = new Date();
@@ -2315,10 +2337,15 @@
                         const ids = [...tasksEl.children]
                             .map(div => div.dataset.id)
                             .filter(Boolean);
+                        const dragToday = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
                         ids.forEach((id, index) => {
                             const task = allTasks.find(t => t.id === id);
                             if (task) task.order = index;
                         });
+                        // ドラッグした再浮上タスクを「配置済み」にして次回ロード時に先頭に戻さない
+                        const resurfacedMoved = ids.map(id => allTasks.find(t => t.id === id))
+                            .filter(t => t && t.waiting && t.waitUntil && t.waitUntil <= dragToday && t.date < dragToday);
+                        if (resurfacedMoved.length) addToResurfacePositioned(resurfacedMoved.map(t => t.id));
                         syncLocal();
                         apiCall({ action: 'reorder', date: currentDate, order: ids });
                         updateCalendar();
