@@ -447,14 +447,13 @@ export async function onRequestPost({ request, env }) {
                    task.color, remaining, cloneOrder, task.repeat_days),
         ]);
 
-        // Renormalize order
-        const allRows = (await db.prepare('SELECT id FROM tasks WHERE user_id=? AND date=? ORDER BY task_order ASC').bind(userId, task.date).all()).results;
-        const reorderStmts = allRows.map((r, i) =>
+        // Renormalize order then fetch final state in one query
+        const updatedRows = (await db.prepare('SELECT * FROM tasks WHERE user_id=? AND date=? ORDER BY task_order').bind(userId, task.date).all()).results;
+        const reorderStmts = updatedRows.map((r, i) =>
             db.prepare('UPDATE tasks SET task_order=? WHERE id=? AND user_id=?').bind(i, r.id, userId)
         );
         if (reorderStmts.length) await db.batch(reorderStmts);
 
-        const updatedRows = (await db.prepare('SELECT * FROM tasks WHERE user_id=? AND date=? ORDER BY task_order').bind(userId, task.date).all()).results;
         return json({ ok: true, tasks: updatedRows.map(taskRowToJs) });
     }
 

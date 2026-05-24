@@ -1036,6 +1036,8 @@
         const tasksEl = document.getElementById("tasks");
         let autoStartNext = false;
         let smartEstimate = false;
+        let taskHistoryCache = null;
+        let cachedDefaultEstimate = 15;
         let startTime = localStorage.getItem('startTime') || '09:00';
 
         const SLOT_HEIGHTS = [36, 60, 90, 120, 150];
@@ -1092,16 +1094,19 @@
                             body: JSON.stringify({ action: 'load' })
                         });
                         allTasks = await res2.json();
+                        taskHistoryCache = null;
                         syncLocal();
                         return;
                     }
                 }
 
                 allTasks = serverTasks;
+                taskHistoryCache = null;
                 syncLocal();
             } catch (e) {
                 console.error("タスク読み込みエラー:", e);
                 allTasks = JSON.parse(localStorage.getItem("allTasks")) ?? [];
+                taskHistoryCache = null;
             }
         }
 
@@ -1256,6 +1261,29 @@
             }
         }
 
+        function createCollapsibleFolder(label, tasks, isExpanded, onToggle, renderCardFn) {
+            const folder = document.createElement('div');
+            folder.className = 'done-folder';
+            const header = document.createElement('div');
+            header.className = 'done-folder-header' + (isExpanded ? ' open' : '');
+            header.innerHTML = `<span class="folder-arrow">▶</span><span>${label} (${tasks.length})</span>`;
+            const bodyWrap = document.createElement('div');
+            bodyWrap.className = 'done-folder-body-wrap';
+            const body = document.createElement('div');
+            body.className = 'done-folder-body';
+            tasks.forEach(task => body.appendChild(renderCardFn(task)));
+            bodyWrap.appendChild(body);
+            if (isExpanded) bodyWrap.style.height = 'auto';
+            header.addEventListener('click', () => {
+                const next = onToggle();
+                header.classList.toggle('open', next);
+                animateFolderToggle(bodyWrap, next);
+            });
+            folder.appendChild(header);
+            folder.appendChild(bodyWrap);
+            return folder;
+        }
+
         function renderTasks() {
             const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
             let { tasks: timedTasks } = buildTimeline(currentDate);
@@ -1282,63 +1310,22 @@
 
             // 完了フォルダー（リスト最上部、スクロール追従）
             if (doneTasks.length > 0) {
-                const folder = document.createElement('div');
-                folder.className = 'done-folder';
-
-                const header = document.createElement('div');
-                header.className = 'done-folder-header' + (doneExpanded ? ' open' : '');
-                header.innerHTML = `<span class="folder-arrow">▶</span><span>完了 (${doneTasks.length})</span>`;
-
-                const bodyWrap = document.createElement('div');
-                bodyWrap.className = 'done-folder-body-wrap';
-                const body = document.createElement('div');
-                body.className = 'done-folder-body';
-                doneTasks.forEach(task => body.appendChild(renderTaskCard(task, today, true)));
-                bodyWrap.appendChild(body);
-
-                // 初期高さを設定（アニメーションなし）
-                if (doneExpanded) bodyWrap.style.height = 'auto';
-
-                header.addEventListener('click', () => {
-                    doneExpanded = !doneExpanded;
-                    header.classList.toggle('open', doneExpanded);
-                    animateFolderToggle(bodyWrap, doneExpanded);
-                });
-
-                folder.appendChild(header);
-                folder.appendChild(bodyWrap);
-                tasksEl.appendChild(folder);
+                tasksEl.appendChild(createCollapsibleFolder(
+                    '完了', doneTasks, doneExpanded,
+                    () => (doneExpanded = !doneExpanded),
+                    task => renderTaskCard(task, today, true)
+                ));
             }
 
             normalTasks.forEach(task => tasksEl.appendChild(renderTaskCard(task, today, true)));
             resurfacedFromPast.forEach(task => tasksEl.appendChild(renderTaskCard(task, today, false)));
 
             if (waitingTasks.length > 0) {
-                const waitFolder = document.createElement('div');
-                waitFolder.className = 'done-folder';
-
-                const waitHeader = document.createElement('div');
-                waitHeader.className = 'done-folder-header' + (waitExpanded ? ' open' : '');
-                waitHeader.innerHTML = `<span class="folder-arrow">▶</span><span>待ち (${waitingTasks.length})</span>`;
-
-                const waitBodyWrap = document.createElement('div');
-                waitBodyWrap.className = 'done-folder-body-wrap';
-                const waitBody = document.createElement('div');
-                waitBody.className = 'done-folder-body';
-                waitingTasks.forEach(task => waitBody.appendChild(renderTaskCard(task, today, false)));
-                waitBodyWrap.appendChild(waitBody);
-
-                if (waitExpanded) waitBodyWrap.style.height = 'auto';
-
-                waitHeader.addEventListener('click', () => {
-                    waitExpanded = !waitExpanded;
-                    waitHeader.classList.toggle('open', waitExpanded);
-                    animateFolderToggle(waitBodyWrap, waitExpanded);
-                });
-
-                waitFolder.appendChild(waitHeader);
-                waitFolder.appendChild(waitBodyWrap);
-                tasksEl.appendChild(waitFolder);
+                tasksEl.appendChild(createCollapsibleFolder(
+                    '待ち', waitingTasks, waitExpanded,
+                    () => (waitExpanded = !waitExpanded),
+                    task => renderTaskCard(task, today, false)
+                ));
             }
 
             updateCalendar();
@@ -1402,6 +1389,7 @@
 
             const afterDelete = () => {
                 allTasks = allTasks.filter(t => t.id !== id);
+                taskHistoryCache = null;
                 syncLocal();
                 apiCall({ action: 'delete', id });
                 renderTasks();
@@ -1476,6 +1464,7 @@
             if (!result.ok) { alert("中断に失敗しました: " + (result.error || "不明なエラー")); return; }
             const otherDays = allTasks.filter(t => t.date !== task.date);
             allTasks = [...otherDays, ...result.tasks];
+            taskHistoryCache = null;
             syncLocal();
 
             const afterRender = () => {
@@ -1721,6 +1710,7 @@
 
             if (isNew) {
                 allTasks.push(task);
+                taskHistoryCache = null;
                 syncLocal();
                 apiCall({ action: 'add', task });
             } else {
@@ -1934,6 +1924,7 @@
         }
 
         function buildTaskHistory() {
+            if (taskHistoryCache) return taskHistoryCache;
             const map = new Map();
             const recent = allTasks
                 .filter(t => t.done && t.actual > 0)
@@ -1946,7 +1937,8 @@
                 if (entry) entry.total += t.actual;
                 else map.set(key, { title: base, total: t.actual, date: t.date });
             });
-            return Array.from(map.values());
+            taskHistoryCache = Array.from(map.values());
+            return taskHistoryCache;
         }
 
         function searchSimilarTasks(query) {
@@ -1971,7 +1963,7 @@
             let suggestTimer = null;
 
             function getDefaultEstimate() {
-                return parseInt(localStorage.getItem('defaultEstimate') ?? '15');
+                return cachedDefaultEstimate;
             }
 
             function hideQuickAddExtras() {
@@ -2059,6 +2051,7 @@
                 templateId: null,
             };
             allTasks.push(newTask);
+            taskHistoryCache = null;
             syncLocal();
             apiCall({ action: 'add', task: newTask });
             sortTasksByTime(currentDate);
@@ -2127,8 +2120,8 @@
                 smartEstimate = (userSettings['smartEstimate'] ?? localStorage.getItem('smartEstimate') ?? '0') === '1';
                 if (userSettings['smartEstimate'] != null) localStorage.setItem('smartEstimate', userSettings['smartEstimate']);
 
-                const defaultEstimate = parseInt(userSettings['defaultEstimate'] ?? localStorage.getItem('defaultEstimate') ?? '15');
-                if (userSettings['defaultEstimate'] != null) localStorage.setItem('defaultEstimate', String(defaultEstimate));
+                cachedDefaultEstimate = parseInt(userSettings['defaultEstimate'] ?? localStorage.getItem('defaultEstimate') ?? '15');
+                if (userSettings['defaultEstimate'] != null) localStorage.setItem('defaultEstimate', String(cachedDefaultEstimate));
 
                 const theme = userSettings['theme'] ?? localStorage.getItem('theme') ?? 'light';
                 if (userSettings['theme'] != null) localStorage.setItem('theme', theme);

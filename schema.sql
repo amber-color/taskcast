@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 
 CREATE INDEX IF NOT EXISTS idx_tasks_user_date ON tasks(user_id, date);
 CREATE INDEX IF NOT EXISTS idx_tasks_template_id ON tasks(template_id);
+CREATE INDEX IF NOT EXISTS idx_repeat_templates_user_id ON repeat_templates(user_id);
 
 CREATE TABLE IF NOT EXISTS repeat_templates (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
