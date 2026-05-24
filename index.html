@@ -255,6 +255,17 @@
             #weekdayBtn { display: none; }
             #navGroup { gap: 4px; }
             #controlsGroup { gap: 6px; }
+            #container { overflow: hidden; }
+            #tasklist {
+                flex: 0 0 100%;
+                min-width: 100%;
+                border-right: none;
+                transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            #calendar {
+                flex: 0 0 100%;
+                transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+            }
         }
 
         #tasks {
@@ -2194,6 +2205,72 @@
                     setTimeout(() => { container.style.transition = ''; }, 220);
                     if (reload) setTimeout(() => location.reload(), 180);
                 }
+            })();
+
+            // Mobile horizontal swipe: task list ↔ calendar
+            (function() {
+                const tasklist = document.getElementById('tasklist');
+                const cal = document.getElementById('calendar');
+                const cont = document.getElementById('container');
+                let view = 'tasks';
+                let startX = 0, startY = 0, dragX = 0;
+                let active = false, locked = false, horiz = false;
+
+                function isMobile() { return window.innerWidth <= 800; }
+
+                function snapTo(v, animate) {
+                    view = v;
+                    tasklist.style.transition = cal.style.transition = animate ? '' : 'none';
+                    const pct = v === 'calendar' ? -100 : 0;
+                    tasklist.style.transform = cal.style.transform = `translateX(${pct}%)`;
+                }
+
+                document.addEventListener('touchstart', e => {
+                    if (!isMobile()) return;
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                    active = true; locked = false; horiz = false; dragX = 0;
+                }, { passive: true });
+
+                document.addEventListener('touchmove', e => {
+                    if (!active || !isMobile()) return;
+                    const dx = e.touches[0].clientX - startX;
+                    const dy = e.touches[0].clientY - startY;
+                    if (!locked) {
+                        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+                        horiz = Math.abs(dx) > Math.abs(dy) * 1.2;
+                        locked = true;
+                        if (horiz) tasklist.style.transition = cal.style.transition = 'none';
+                    }
+                    if (!horiz) return;
+                    e.preventDefault();
+                    dragX = dx;
+                    const w = cont.offsetWidth;
+                    const base = view === 'calendar' ? -w : 0;
+                    const pct = Math.max(-100, Math.min(0, ((base + dx) / w) * 100));
+                    tasklist.style.transform = cal.style.transform = `translateX(${pct}%)`;
+                }, { passive: false });
+
+                document.addEventListener('touchend', () => {
+                    if (!active || !isMobile()) { active = false; return; }
+                    active = false;
+                    if (!horiz) return;
+                    const thr = cont.offsetWidth * 0.25;
+                    if (view === 'tasks' && dragX < -thr) snapTo('calendar', true);
+                    else if (view === 'calendar' && dragX > thr) snapTo('tasks', true);
+                    else snapTo(view, true);
+                }, { passive: true });
+
+                document.addEventListener('touchcancel', () => {
+                    if (active && isMobile()) { active = false; if (horiz) snapTo(view, true); }
+                }, { passive: true });
+
+                window.addEventListener('resize', () => {
+                    if (!isMobile()) {
+                        tasklist.style.transform = tasklist.style.transition = '';
+                        cal.style.transform = cal.style.transition = '';
+                    }
+                });
             })();
 
         });
