@@ -1154,8 +1154,8 @@
                 } else if (task.startTime > 0) {
                     return `
               <button onclick="interruptTask('${task.id}')" title="中断">${SVG.pause}</button>
-              <button onclick="waitTask('${task.id}')" title="待ちにする">${SVG.wait}</button>
               <button onclick="editTask('${task.id}')" title="編集">${SVG.edit}</button>
+              <button onclick="waitTask('${task.id}')" title="待ちにする">${SVG.wait}</button>
               <button onclick="finishTask('${task.id}')" title="完了">${SVG.check}</button>`;
                 } else {
                     return `
