@@ -1450,7 +1450,7 @@
             card.classList.add('task-completing');
             const overlay = document.createElement('div');
             overlay.className = 'task-complete-overlay';
-            overlay.textContent = '⏸';
+            overlay.innerHTML = '<svg viewBox="0 0 16 16" width="28" height="28" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect x="3.5" y="2.5" width="3.5" height="11" rx="1"/><rect x="9" y="2.5" width="3.5" height="11" rx="1"/></svg>';
             card.appendChild(overlay);
 
             requestAnimationFrame(() => requestAnimationFrame(() => {
