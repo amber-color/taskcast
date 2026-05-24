@@ -877,6 +877,10 @@
         html.dark #waitModal textarea, html.dark #waitModal input { background: #2c2c2e; border-color: #3a3a3a; color: #e0e0e0; }
         html.dark #waitModalCancelBtn { background: #2c2c2e; color: #aaa; }
         html.dark #waitModalSaveBtn { background: #aaa; color: #111; }
+        #waitModal > div { background: #fff; }
+        #waitModal h3 { color: #333; }
+        #waitModalCancelBtn { background: #e0e0e5; color: #333; }
+        #waitModalSaveBtn { background: #333; color: #fff; }
         html.dark #calendar { background: #111213; }
         html.dark #calendar .fc-theme-standard td,
         html.dark #calendar .fc-theme-standard th { border-color: #2e2e2e !important; }
@@ -1003,15 +1007,15 @@
 
     <!-- 待ちモーダル -->
     <div id="waitModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;">
-        <div style="background:#fff;border-radius:12px;padding:24px;width:320px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,0.2);display:flex;flex-direction:column;gap:10px;">
-            <h3 style="margin:0 0 4px;font-size:16px;color:#333;">待ち設定</h3>
+        <div style="border-radius:12px;padding:24px;width:320px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,0.2);display:flex;flex-direction:column;gap:10px;">
+            <h3 style="margin:0 0 4px;font-size:16px;">待ち設定</h3>
             <textarea id="waitModalTitle" rows="2" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:14px;font-family:inherit;resize:none;"></textarea>
             <div class="modal-row">
                 <label>再浮上日</label><input type="date" id="waitModalDate">
             </div>
             <div class="modal-footer">
-                <button id="waitModalCancelBtn" style="padding:8px 20px;border:none;border-radius:8px;font-size:14px;cursor:pointer;background:#e0e0e5;color:#333;">キャンセル</button>
-                <button id="waitModalSaveBtn" style="padding:8px 20px;border:none;border-radius:8px;font-size:14px;cursor:pointer;background:#333;color:#fff;">待ち状態にする</button>
+                <button id="waitModalCancelBtn" style="padding:8px 20px;border:none;border-radius:8px;font-size:14px;cursor:pointer;">キャンセル</button>
+                <button id="waitModalSaveBtn" style="padding:8px 20px;border:none;border-radius:8px;font-size:14px;cursor:pointer;">待ち状態にする</button>
             </div>
         </div>
     </div>
