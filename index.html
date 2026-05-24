@@ -213,6 +213,29 @@
             border-right: 1px solid #eee;
             height: 100%;
             background: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #ptr-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: #999;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        #ptr-indicator .ptr-arrow {
+            font-size: 16px;
+            display: inline-block;
+            transition: transform 0.2s;
         }
 
         #tasks-container {
@@ -221,6 +244,8 @@
             padding: 5px 10px 10px 16px;
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 1;
         }
 
         @media screen and (max-width: 800px) {
@@ -831,6 +856,7 @@
             </div>
             <div id="container">
                 <div id="tasklist">
+                    <div id="ptr-indicator"><span class="ptr-arrow">↓</span><span class="ptr-label">引いて更新</span></div>
                     <div id="tasks-container">
                         <div id="tasks"></div>
                     </div>
@@ -2125,6 +2151,49 @@
                         if (elapsedEl) elapsedEl.textContent = Math.max(1, Math.floor((Date.now() - task.startTime) / 60000)) + '分';
                     });
                 }, 30000);
+            })();
+
+            // Pull to refresh
+            (function() {
+                const container = document.getElementById('tasks-container');
+                const indicator = document.getElementById('ptr-indicator');
+                const arrow = indicator.querySelector('.ptr-arrow');
+                const label = indicator.querySelector('.ptr-label');
+                const THRESHOLD = 65;
+                let startY = 0, pulling = false, triggered = false;
+
+                container.addEventListener('touchstart', e => {
+                    if (container.scrollTop === 0) {
+                        startY = e.touches[0].clientY;
+                        pulling = true;
+                        triggered = false;
+                    }
+                }, { passive: true });
+
+                container.addEventListener('touchmove', e => {
+                    if (!pulling) return;
+                    const dy = e.touches[0].clientY - startY;
+                    if (dy <= 0) { reset(false); return; }
+                    const t = Math.min(dy * 0.45, 58);
+                    container.style.transform = `translateY(${t}px)`;
+                    triggered = dy >= THRESHOLD;
+                    arrow.style.transform = triggered ? 'rotate(180deg)' : '';
+                    label.textContent = triggered ? '離して更新' : '引いて更新';
+                }, { passive: true });
+
+                container.addEventListener('touchend', () => reset(triggered), { passive: true });
+                container.addEventListener('touchcancel', () => reset(false), { passive: true });
+
+                function reset(reload) {
+                    if (!pulling) return;
+                    pulling = false;
+                    container.style.transition = 'transform 0.22s ease';
+                    container.style.transform = '';
+                    arrow.style.transform = '';
+                    label.textContent = '引いて更新';
+                    setTimeout(() => { container.style.transition = ''; }, 220);
+                    if (reload) setTimeout(() => location.reload(), 180);
+                }
             })();
 
         });
