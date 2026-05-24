@@ -441,7 +441,7 @@
             border-bottom: 1px solid #f0f0f0;
             gap: 8px;
         }
-        html.dark .qs-item { border-bottom-color: #2a2a2a; }
+        html.dark .qs-item { border-bottom-color: #2a2a2a; color: #e0e0e0; }
         .qs-item:last-child { border-bottom: none; }
         .qs-item:hover { background: #f7f7f7; }
         html.dark .qs-item:hover { background: #2a2a2a; }
@@ -855,6 +855,8 @@
         html.dark .resurface-badge { color: rgba(0,0,0,0.55); }
         html.dark .section-divider { background: #2c2c2e; color: #555; border-top-color: #2e2e2e; border-bottom-color: #2e2e2e; }
         html.dark #quickAddBar { background: #2c2c2e; border-color: #3a3a3a; }
+        html.dark #quickAddInput { color: #e0e0e0; }
+        html.dark #quickAddInput::placeholder { color: #555; }
         html.dark #quickInput { background: #1c1c1e; color: #e0e0e0; border-color: #3a3a3a; }
         html.dark #quickInput::placeholder { color: #555; }
         html.dark #editModal { background: rgba(0,0,0,0.7); }
@@ -1874,6 +1876,7 @@
                     const score = maxLen === 0 ? 1 : 1 - levenshtein(q, h.title.toLowerCase()) / maxLen;
                     return { ...h, score };
                 })
+                .filter(h => h.score >= 0.5)
                 .sort((a, b) => b.score - a.score || b.date.localeCompare(a.date))
                 .slice(0, 3);
         }
