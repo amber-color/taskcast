@@ -263,10 +263,15 @@
         }
 
         .task-time {
+            position: absolute;
+            top: 5px;
+            right: 28px;
             font-size: 0.78em;
             color: #666;
-            margin-left: auto;
-            flex-shrink: 0;
+        }
+
+        .task.has-time {
+            padding-top: 20px;
         }
 
         .done {
@@ -1032,6 +1037,7 @@
             if (task.done) classes += " done";
             if (task.startTime > 0 && !task.done && !task.waiting) classes += " working";
             if (task.waiting && task.waitUntil > today) classes += " waiting-mode";
+            if (timeSpan) classes += " has-time";
             div.className = classes;
 
             if (task.startTime > 0 && !task.done && !task.waiting && task.estimate > 0) {
@@ -1083,6 +1089,7 @@
 
             div.innerHTML = `
             <div>
+             ${timeSpan}
              ${resurfaceBadge}<strong>${task.url
                     ? `<a class="title-link" href="${decodeURIComponent(task.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(task.title)}</a>`
                     : escapeHTML(task.title)
@@ -1091,7 +1098,6 @@
                 <span class="task-meta">見${task.estimate}分/実${task.done ? task.actual : "?"}分</span>
                 ${waitDateDisplay}
                 ${task.done ? `<span class="task-meta" style="color: ${getDiffColor(task)};">(${formatDiff(task)})</span>` : ''}
-                ${timeSpan}
               </div>
               <span class="drag-handle" title="並べ替え">&#9776;</span>
             </div>
