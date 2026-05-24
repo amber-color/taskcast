@@ -1360,10 +1360,32 @@
         function deleteTask(id) {
             const task = allTasks.find(t => t.id === id);
             if (!task) return;
-            allTasks = allTasks.filter(t => t.id !== id);
-            syncLocal();
-            apiCall({ action: 'delete', id });
-            renderTasks();
+
+            const afterDelete = () => {
+                allTasks = allTasks.filter(t => t.id !== id);
+                syncLocal();
+                apiCall({ action: 'delete', id });
+                renderTasks();
+            };
+
+            const card = document.querySelector(`.task[data-id="${id}"]`);
+            if (!card) { afterDelete(); return; }
+
+            card.style.height = card.offsetHeight + 'px';
+            card.classList.add('task-completing');
+            const overlay = document.createElement('div');
+            overlay.className = 'task-complete-overlay';
+            overlay.textContent = '✕';
+            card.appendChild(overlay);
+
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                card.style.height = '0';
+                card.style.opacity = '0';
+                card.style.marginBottom = '0';
+                card.style.padding = '0';
+            }));
+
+            setTimeout(afterDelete, 500);
         }
 
         function startTask(id) {
@@ -1416,8 +1438,29 @@
             const otherDays = allTasks.filter(t => t.date !== task.date);
             allTasks = [...otherDays, ...result.tasks];
             syncLocal();
-            renderTasks();
-            requestAnimationFrame(() => refreshNowIndicator());
+
+            const afterRender = () => {
+                renderTasks();
+                requestAnimationFrame(() => refreshNowIndicator());
+            };
+
+            if (!card) { afterRender(); return; }
+
+            card.style.height = card.offsetHeight + 'px';
+            card.classList.add('task-completing');
+            const overlay = document.createElement('div');
+            overlay.className = 'task-complete-overlay';
+            overlay.textContent = '⏸';
+            card.appendChild(overlay);
+
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                card.style.height = '0';
+                card.style.opacity = '0';
+                card.style.marginBottom = '0';
+                card.style.padding = '0';
+            }));
+
+            setTimeout(afterRender, 500);
         }
 
         function finishTask(id) {
