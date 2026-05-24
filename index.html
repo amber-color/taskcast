@@ -257,16 +257,21 @@
             #controlsGroup { gap: 6px; }
             #container { overflow: hidden; }
             #tasklist {
-                flex: 0 0 60%;
+                flex: 1;
                 min-width: 0;
+                max-width: 60%;
+                border-right: none;
+                box-shadow: inset -1px 0 0 #eee;
                 overflow: hidden;
             }
             #calendar {
-                flex: 0 0 40%;
+                flex: 1;
                 min-width: 0;
+                max-width: 40%;
                 overflow: hidden;
             }
             #tasks-container { padding: 5px 10px 10px; }
+            html.dark #tasklist { box-shadow: inset -1px 0 0 #2e2e2e; }
         }
 
         #tasks {
@@ -2233,10 +2238,12 @@
                 }
 
                 function applyWidths(tw, cw, animate) {
-                    const tr = animate ? 'flex-basis 0.32s cubic-bezier(0.4,0,0.2,1)' : 'none';
+                    const tr = animate
+                        ? 'min-width 0.32s cubic-bezier(0.4,0,0.2,1), max-width 0.32s cubic-bezier(0.4,0,0.2,1)'
+                        : 'none';
                     tasklist.style.transition = cal.style.transition = tr;
-                    tasklist.style.flexBasis = tw + '%';
-                    cal.style.flexBasis = cw + '%';
+                    tasklist.style.minWidth = tasklist.style.maxWidth = tw + '%';
+                    cal.style.minWidth = cal.style.maxWidth = cw + '%';
                 }
 
                 function snapTo(s, animate) {
@@ -2284,8 +2291,8 @@
 
                 window.addEventListener('resize', () => {
                     if (!isMobile()) {
-                        tasklist.style.flexBasis = tasklist.style.transition = '';
-                        cal.style.flexBasis = cal.style.transition = '';
+                        tasklist.style.minWidth = tasklist.style.maxWidth = tasklist.style.transition = '';
+                        cal.style.minWidth = cal.style.maxWidth = cal.style.transition = '';
                     }
                 });
             })();
