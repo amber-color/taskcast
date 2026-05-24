@@ -1037,7 +1037,6 @@
             if (task.done) classes += " done";
             if (task.startTime > 0 && !task.done && !task.waiting) classes += " working";
             if (task.waiting && task.waitUntil > today) classes += " waiting-mode";
-            if (timeSpan) classes += " has-time";
             div.className = classes;
 
             if (task.startTime > 0 && !task.done && !task.waiting && task.estimate > 0) {
@@ -1083,6 +1082,7 @@
             const timeSpan = showTime && task.plannedStart
                 ? `<span class="task-time">${formatTime(task.plannedStart)}-${formatTime(task.plannedEnd)}</span>`
                 : '';
+            if (timeSpan) div.classList.add('has-time');
             const waitDateDisplay = task.waiting && waitDateStr
                 ? `<span class="task-wait-date">催促: ${waitDateStr}</span>`
                 : '';
