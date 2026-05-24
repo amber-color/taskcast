@@ -1025,42 +1025,6 @@
     <script>
         let allTasks = [];
 
-        // 再浮上タスクの自動配置管理（localStorage: 今日付けで管理、翌日以降は自動リセット）
-        function getResurfacePositioned() {
-            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
-            try { return new Set(JSON.parse(localStorage.getItem('resurfacePos_' + today) || '[]')); }
-            catch { return new Set(); }
-        }
-        function addToResurfacePositioned(ids) {
-            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
-            const set = getResurfacePositioned();
-            ids.forEach(id => set.add(id));
-            localStorage.setItem('resurfacePos_' + today, JSON.stringify([...set]));
-        }
-        // 初回再浮上のタスクだけ先頭に配置してDBに保存
-        function autoPositionNewResurfaced() {
-            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
-            const positioned = getResurfacePositioned();
-            const allResurfaced = allTasks.filter(t =>
-                !t.done && t.waiting && t.waitUntil && t.waitUntil <= today && t.date < today
-            );
-            const newlyResurfaced = allResurfaced.filter(t => !positioned.has(t.id));
-            if (!newlyResurfaced.length) return;
-
-            const existingResurfaced = allResurfaced.filter(t => positioned.has(t.id))
-                .sort((a, b) => a.order - b.order);
-            const todayNormal = allTasks
-                .filter(t => t.date === today && !t.done && !(t.waiting && t.waitUntil > today))
-                .sort((a, b) => a.order - b.order);
-            const ordered = [
-                ...newlyResurfaced.sort((a, b) => a.order - b.order),
-                ...existingResurfaced,
-                ...todayNormal
-            ];
-            ordered.forEach((t, i) => { t.order = i; });
-            apiCall({ action: 'reorder', date: today, order: ordered.map(t => t.id) });
-            addToResurfacePositioned(newlyResurfaced.map(t => t.id));
-        }
         let waitingTargetId = null;
         let lastResurfacedCount = 0;
         let doneExpanded = false;
@@ -1137,7 +1101,6 @@
                         allTasks = await res2.json();
                         taskHistoryCache = null;
                         syncLocal();
-                        autoPositionNewResurfaced();
                         return;
                     }
                 }
@@ -1145,7 +1108,6 @@
                 allTasks = serverTasks;
                 taskHistoryCache = null;
                 syncLocal();
-                autoPositionNewResurfaced();
             } catch (e) {
                 console.error("タスク読み込みエラー:", e);
                 allTasks = JSON.parse(localStorage.getItem("allTasks")) ?? [];
@@ -1607,7 +1569,6 @@
             const resurfacedCount = allTasks.filter(t => t.waiting && t.waitUntil && t.waitUntil <= todayForWait).length;
             if (resurfacedCount !== lastResurfacedCount) {
                 lastResurfacedCount = resurfacedCount;
-                autoPositionNewResurfaced();
                 changed = true;
             }
 
@@ -2337,15 +2298,10 @@
                         const ids = [...tasksEl.children]
                             .map(div => div.dataset.id)
                             .filter(Boolean);
-                        const dragToday = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
                         ids.forEach((id, index) => {
                             const task = allTasks.find(t => t.id === id);
                             if (task) task.order = index;
                         });
-                        // ドラッグした再浮上タスクを「配置済み」にして次回ロード時に先頭に戻さない
-                        const resurfacedMoved = ids.map(id => allTasks.find(t => t.id === id))
-                            .filter(t => t && t.waiting && t.waitUntil && t.waitUntil <= dragToday && t.date < dragToday);
-                        if (resurfacedMoved.length) addToResurfacePositioned(resurfacedMoved.map(t => t.id));
                         syncLocal();
                         apiCall({ action: 'reorder', date: currentDate, order: ids });
                         updateCalendar();
@@ -2458,9 +2414,10 @@
                         if (newTitle) task.title = newTitle;
                         task.waiting = true;
                         task.waitUntil = date;
+                        task.order = -1;
                         syncLocal();
                         apiCall({ action: 'update', id: waitingTargetId, fields: {
-                            title: task.title, waiting: true, waitUntil: date
+                            title: task.title, waiting: true, waitUntil: date, order: -1
                         }});
                         renderTasks();
                     }
