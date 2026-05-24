@@ -257,17 +257,15 @@
             #controlsGroup { gap: 6px; }
             #container { overflow: hidden; }
             #tasklist {
-                flex: 1;
-                min-width: 0;
-                max-width: 60%;
+                flex: none;
+                min-width: 0 !important;
                 border-right: none;
                 box-shadow: inset -1px 0 0 #eee;
                 overflow: hidden;
             }
             #calendar {
-                flex: 1;
+                flex: none;
                 min-width: 0;
-                max-width: 40%;
                 overflow: hidden;
             }
             #tasks-container { padding: 5px 10px 10px; }
@@ -2238,17 +2236,19 @@
                 }
 
                 function applyWidths(tw, cw, animate) {
-                    const tr = animate
-                        ? 'min-width 0.32s cubic-bezier(0.4,0,0.2,1), max-width 0.32s cubic-bezier(0.4,0,0.2,1)'
-                        : 'none';
-                    tasklist.style.transition = cal.style.transition = tr;
-                    tasklist.style.minWidth = tasklist.style.maxWidth = tw + '%';
-                    cal.style.minWidth = cal.style.maxWidth = cw + '%';
+                    const total = cont.offsetWidth;
+                    const taskPx = Math.round(total * tw / 100);
+                    const calPx  = total - taskPx;
+                    tasklist.style.transition = cal.style.transition =
+                        animate ? 'width 0.32s cubic-bezier(0.4,0,0.2,1)' : 'none';
+                    tasklist.style.width = taskPx + 'px';
+                    cal.style.width = calPx + 'px';
                 }
 
                 function snapTo(s, animate) {
                     state = Math.max(0, Math.min(2, s));
                     applyWidths(TASK_W[state], CAL_W[state], animate);
+                    if (animate) setTimeout(() => window.dispatchEvent(new Event('resize')), 350);
                 }
 
                 document.addEventListener('touchstart', e => {
@@ -2290,11 +2290,15 @@
                 }, { passive: true });
 
                 window.addEventListener('resize', () => {
-                    if (!isMobile()) {
-                        tasklist.style.minWidth = tasklist.style.maxWidth = tasklist.style.transition = '';
-                        cal.style.minWidth = cal.style.maxWidth = cal.style.transition = '';
+                    if (isMobile()) {
+                        applyWidths(TASK_W[state], CAL_W[state], false);
+                    } else {
+                        tasklist.style.width = tasklist.style.transition = '';
+                        cal.style.width = cal.style.transition = '';
                     }
                 });
+
+                if (isMobile()) applyWidths(TASK_W[state], CAL_W[state], false);
             })();
 
         });
