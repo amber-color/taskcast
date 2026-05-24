@@ -327,8 +327,6 @@
             display: grid;
             grid-template-rows: 0fr;
             transition: grid-template-rows 0.25s ease;
-            overflow: hidden;
-            margin-bottom: 0;
         }
         .done-folder-body-wrap.open { grid-template-rows: 1fr; }
         .done-folder-body {
@@ -336,6 +334,7 @@
             flex-direction: column;
             gap: 6px;
             min-height: 0;
+            overflow: hidden;
             padding-bottom: 6px;
         }
 
