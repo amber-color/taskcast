@@ -1321,8 +1321,8 @@
                 ));
             }
 
-            normalTasks.forEach(task => tasksEl.appendChild(renderTaskCard(task, today, true)));
             resurfacedFromPast.forEach(task => tasksEl.appendChild(renderTaskCard(task, today, false)));
+            normalTasks.forEach(task => tasksEl.appendChild(renderTaskCard(task, today, true)));
 
             if (waitingTasks.length > 0) {
                 tasksEl.appendChild(createCollapsibleFolder(
