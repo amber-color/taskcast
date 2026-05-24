@@ -257,18 +257,16 @@
             #controlsGroup { gap: 6px; }
             #container { overflow: hidden; }
             #tasklist {
-                flex: none;
+                flex: 0 0 60%;
                 min-width: 0;
-                width: 25%;
-                border-right: none;
                 overflow: hidden;
             }
             #calendar {
-                flex: none;
+                flex: 0 0 40%;
                 min-width: 0;
-                width: 75%;
                 overflow: hidden;
             }
+            #tasks-container { padding: 5px 10px 10px; }
         }
 
         #tasks {
@@ -2217,8 +2215,8 @@
                 const cont = document.getElementById('container');
 
                 // state: 0=tasks only, 1=both (default), 2=calendar only
-                const TASK_W = [100, 25, 0];
-                const CAL_W  = [0,  75, 100];
+                const TASK_W = [100, 60, 0];
+                const CAL_W  = [0,  40, 100];
                 let state = 1;
                 let startX = 0, startY = 0, dragX = 0;
                 let active = false, locked = false, horiz = false;
@@ -2235,10 +2233,10 @@
                 }
 
                 function applyWidths(tw, cw, animate) {
-                    const tr = animate ? 'width 0.32s cubic-bezier(0.4,0,0.2,1)' : 'none';
+                    const tr = animate ? 'flex-basis 0.32s cubic-bezier(0.4,0,0.2,1)' : 'none';
                     tasklist.style.transition = cal.style.transition = tr;
-                    tasklist.style.width = tw + '%';
-                    cal.style.width = cw + '%';
+                    tasklist.style.flexBasis = tw + '%';
+                    cal.style.flexBasis = cw + '%';
                 }
 
                 function snapTo(s, animate) {
@@ -2286,8 +2284,8 @@
 
                 window.addEventListener('resize', () => {
                     if (!isMobile()) {
-                        tasklist.style.width = tasklist.style.transition = '';
-                        cal.style.width = cal.style.transition = '';
+                        tasklist.style.flexBasis = tasklist.style.transition = '';
+                        cal.style.flexBasis = cal.style.transition = '';
                     }
                 });
             })();
