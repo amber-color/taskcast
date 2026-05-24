@@ -1064,15 +1064,25 @@
                 ? `<span class="task-wait-date">催促: ${waitDateStr}</span>`
                 : '';
 
+            const clockSvg = `<svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" style="vertical-align:-1px;opacity:0.7"><path fill-rule="evenodd" d="M8 2a6 6 0 100 12A6 6 0 008 2zM7.5 5h1v3.5h-1zM8 8h3v1H8z"/></svg>`;
+            let metaHtml;
+            if (task.done) {
+                metaHtml = `<span class="task-meta">${clockSvg} ${task.estimate}分 → ${task.actual}分 <span style="color:${getDiffColor(task)}">(${formatDiff(task)})</span></span>`;
+            } else if (task.startTime > 0 && !task.waiting) {
+                const elapsed = Math.max(1, Math.floor((Date.now() - task.startTime) / 60000));
+                metaHtml = `<span class="task-meta">${clockSvg} ${task.estimate}分 → <span class="task-elapsed">${elapsed}分</span></span>`;
+            } else {
+                metaHtml = `<span class="task-meta">${clockSvg} ${task.estimate}分</span>`;
+            }
+
             div.innerHTML = `
             <div>
              ${resurfaceBadge}<strong>${task.url
                     ? `<a class="title-link" href="${decodeURIComponent(task.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(task.title)}</a>`
                     : escapeHTML(task.title)
                 }</strong><br>
-              <span class="task-meta">見${task.estimate}分/実${task.done ? task.actual : "?"}分</span>
+              ${metaHtml}
               ${waitDateDisplay}
-              ${task.done ? `<span class="task-meta" style="color: ${getDiffColor(task)};">(${formatDiff(task)})</span>` : ''}
               <span class="drag-handle" title="並べ替え">&#9776;</span>
             </div>
             <div>
@@ -2111,6 +2121,8 @@
                         if (!task || !task.startTime || !task.estimate) return;
                         const progress = Math.min((Date.now() - task.startTime) / (task.estimate * 60000), 1) * 100;
                         card.style.background = `linear-gradient(to bottom, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.38) ${progress.toFixed(1)}%, transparent ${progress.toFixed(1)}%), ${task.color}`;
+                        const elapsedEl = card.querySelector('.task-elapsed');
+                        if (elapsedEl) elapsedEl.textContent = Math.max(1, Math.floor((Date.now() - task.startTime) / 60000)) + '分';
                     });
                 }, 30000);
             })();

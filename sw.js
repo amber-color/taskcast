@@ -1,4 +1,4 @@
-const CACHE = 'task-tracker-v29';
+const CACHE = 'task-tracker-v30';
 
 // すべて同一オリジン（CDN依存を排除）。1ファイル失敗してもSW更新をブロックしない。
 const PRECACHE = [
