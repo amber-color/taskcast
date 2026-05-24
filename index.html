@@ -324,17 +324,13 @@
         }
         .done-folder-header.open .folder-arrow { transform: rotate(90deg); }
         .done-folder-body-wrap {
-            display: grid;
-            grid-template-rows: 0fr;
-            transition: grid-template-rows 0.25s ease;
+            overflow: hidden;
+            height: 0;
         }
-        .done-folder-body-wrap.open { grid-template-rows: 1fr; }
         .done-folder-body {
             display: flex;
             flex-direction: column;
             gap: 6px;
-            min-height: 0;
-            overflow: hidden;
             padding-bottom: 6px;
         }
 
@@ -1241,6 +1237,25 @@
             requestAnimationFrame(() => applySelectedHighlight(dateStr));
         }
 
+        function animateFolderToggle(wrap, open) {
+            wrap.style.transition = 'none';
+            if (open) {
+                wrap.style.height = '0';
+                const target = wrap.scrollHeight;
+                wrap.style.transition = 'height 0.25s ease';
+                requestAnimationFrame(() => {
+                    wrap.style.height = target + 'px';
+                });
+                setTimeout(() => { wrap.style.height = 'auto'; }, 260);
+            } else {
+                wrap.style.height = wrap.offsetHeight + 'px';
+                wrap.style.transition = 'height 0.25s ease';
+                requestAnimationFrame(() => {
+                    wrap.style.height = '0';
+                });
+            }
+        }
+
         function renderTasks() {
             const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
             let { tasks: timedTasks } = buildTimeline(currentDate);
@@ -1275,16 +1290,19 @@
                 header.innerHTML = `<span class="folder-arrow">▶</span><span>完了 (${doneTasks.length})</span>`;
 
                 const bodyWrap = document.createElement('div');
-                bodyWrap.className = 'done-folder-body-wrap' + (doneExpanded ? ' open' : '');
+                bodyWrap.className = 'done-folder-body-wrap';
                 const body = document.createElement('div');
                 body.className = 'done-folder-body';
                 doneTasks.forEach(task => body.appendChild(renderTaskCard(task, today, true)));
                 bodyWrap.appendChild(body);
 
+                // 初期高さを設定（アニメーションなし）
+                if (doneExpanded) bodyWrap.style.height = 'auto';
+
                 header.addEventListener('click', () => {
                     doneExpanded = !doneExpanded;
                     header.classList.toggle('open', doneExpanded);
-                    bodyWrap.classList.toggle('open', doneExpanded);
+                    animateFolderToggle(bodyWrap, doneExpanded);
                 });
 
                 folder.appendChild(header);
@@ -1304,16 +1322,18 @@
                 waitHeader.innerHTML = `<span class="folder-arrow">▶</span><span>待ち (${waitingTasks.length})</span>`;
 
                 const waitBodyWrap = document.createElement('div');
-                waitBodyWrap.className = 'done-folder-body-wrap' + (waitExpanded ? ' open' : '');
+                waitBodyWrap.className = 'done-folder-body-wrap';
                 const waitBody = document.createElement('div');
                 waitBody.className = 'done-folder-body';
                 waitingTasks.forEach(task => waitBody.appendChild(renderTaskCard(task, today, false)));
                 waitBodyWrap.appendChild(waitBody);
 
+                if (waitExpanded) waitBodyWrap.style.height = 'auto';
+
                 waitHeader.addEventListener('click', () => {
                     waitExpanded = !waitExpanded;
                     waitHeader.classList.toggle('open', waitExpanded);
-                    waitBodyWrap.classList.toggle('open', waitExpanded);
+                    animateFolderToggle(waitBodyWrap, waitExpanded);
                 });
 
                 waitFolder.appendChild(waitHeader);
