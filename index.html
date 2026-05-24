@@ -1376,10 +1376,12 @@
         function unwaitTask(id) {
             const task = allTasks.find(t => t.id === id);
             if (!task) return;
+            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
             task.waiting = false;
             task.waitUntil = '';
+            if (task.date < today) task.date = today;
             syncLocal();
-            apiCall({ action: 'update', id, fields: { waiting: false, waitUntil: '' } });
+            apiCall({ action: 'update', id, fields: { waiting: false, waitUntil: '', date: task.date } });
             renderTasks();
         }
 
