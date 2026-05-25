@@ -881,6 +881,14 @@
         #waitModal h3 { color: #333; }
         #waitModalCancelBtn { background: #e0e0e5; color: #333; }
         #waitModalSaveBtn { background: #333; color: #fff; }
+        #deleteModal > div { background: #fff; }
+        #deleteModalMsg { color: #333; }
+        #deleteModalCancelBtn { background: #e0e0e5; color: #333; }
+        #deleteModalConfirmBtn { background: #d32f2f; color: #fff; }
+        html.dark #deleteModal > div { background: #1c1c1e; }
+        html.dark #deleteModalMsg { color: #e0e0e0; }
+        html.dark #deleteModalCancelBtn { background: #2c2c2e; color: #aaa; }
+        html.dark #deleteModalConfirmBtn { background: #b71c1c; color: #fff; }
         html.dark #calendar { background: #111213; }
         html.dark #calendar .fc-theme-standard td,
         html.dark #calendar .fc-theme-standard th { border-color: #2e2e2e !important; }
@@ -1020,7 +1028,16 @@
         </div>
     </div>
 
-    <script src="vendor/sortable.min.js"></script>
+    <!-- 削除確認モーダル -->
+    <div id="deleteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;">
+        <div style="border-radius:12px;padding:24px;width:320px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,0.2);display:flex;flex-direction:column;gap:14px;">
+            <p id="deleteModalMsg" style="margin:0;font-size:15px;line-height:1.5;"></p>
+            <div class="modal-footer">
+                <button id="deleteModalCancelBtn" style="padding:8px 20px;border:none;border-radius:8px;font-size:14px;cursor:pointer;">キャンセル</button>
+                <button id="deleteModalConfirmBtn" style="padding:8px 20px;border:none;border-radius:8px;font-size:14px;cursor:pointer;">削除</button>
+            </div>
+        </div>
+    </div>
     <script src="vendor/fullcalendar.min.js"></script>
     <script>
         let allTasks = [];
@@ -1381,7 +1398,20 @@
             renderTasks();
         }
 
+        let deletingTaskId = null;
+
         function deleteTask(id) {
+            const task = allTasks.find(t => t.id === id);
+            if (!task) return;
+            deletingTaskId = id;
+            document.getElementById('deleteModalMsg').textContent = `タスク「${task.title || '(無題)'}」を削除しますか？`;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function confirmDelete() {
+            const id = deletingTaskId;
+            deletingTaskId = null;
+            document.getElementById('deleteModal').style.display = 'none';
             const task = allTasks.find(t => t.id === id);
             if (!task) return;
 
@@ -2428,6 +2458,18 @@
                     if (e.target === document.getElementById('waitModal')) {
                         waitingTargetId = null;
                         document.getElementById('waitModal').style.display = 'none';
+                    }
+                });
+
+                document.getElementById('deleteModalCancelBtn').addEventListener('click', () => {
+                    deletingTaskId = null;
+                    document.getElementById('deleteModal').style.display = 'none';
+                });
+                document.getElementById('deleteModalConfirmBtn').addEventListener('click', confirmDelete);
+                document.getElementById('deleteModal').addEventListener('click', e => {
+                    if (e.target === document.getElementById('deleteModal')) {
+                        deletingTaskId = null;
+                        document.getElementById('deleteModal').style.display = 'none';
                     }
                 });
 
