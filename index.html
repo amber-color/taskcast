@@ -1771,6 +1771,9 @@
             const start = new Date(view.activeStart);
             const end = new Date(view.activeEnd);
             const events = [];
+            // FullCalendar への時刻は分単位に丸める
+            // （startTime がミリ秒精度のため、隣接タスクが秒の差で重なり判定される問題を防ぐ）
+            const toMin = t => new Date(Math.floor(t.getTime() / 60000) * 60000);
 
             for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
                 const ymd = d.toISOString().slice(0, 10);
@@ -1781,8 +1784,8 @@
                     segs.forEach(seg => {
                         events.push({
                             title: t.title,
-                            start: seg.start,
-                            end: seg.end,
+                            start: toMin(seg.start),
+                            end: toMin(seg.end),
                             backgroundColor: t.done ? getPaleColor(t.color) : t.color,
                             borderColor: t.done
                                 ? getPaleColor(t.color)
