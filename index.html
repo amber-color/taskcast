@@ -643,11 +643,11 @@
             box-shadow: none !important;
         }
 
-        /* 5分未満の短いイベント：ビジュアル上の最低高さを確保し隣接イベントの上に表示 */
-        /* スパン計算（重なり判定）は eventMinHeight:0 のため影響なし */
+        /* 5分未満の短いイベント：孤立している場合は 20px 確保して時間を表示
+           連続タスクの場合は次イベントが DOM 順で上に来るため自然な高さ（薄いバー）になる
+           z-index は設定しない（設定すると次タスクの時間が隠れるため） */
         .fc-timegrid-event-harness:has(.fc-task-short) {
             min-height: 20px;
-            z-index: 10 !important;
         }
 
         .fc-event-time {
