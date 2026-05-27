@@ -1782,10 +1782,13 @@
                 tasks.forEach(t => {
                     const segs = t.segments || [{ start: t.plannedStart, end: t.plannedEnd }];
                     segs.forEach(seg => {
+                        const segStart = toMin(seg.start);
+                        const segEnd = toMin(seg.end);
+                        if (segStart.getTime() >= segEnd.getTime()) return;
                         events.push({
                             title: t.title,
-                            start: toMin(seg.start),
-                            end: toMin(seg.end),
+                            start: segStart,
+                            end: segEnd,
                             backgroundColor: t.done ? getPaleColor(t.color) : t.color,
                             borderColor: t.done
                                 ? getPaleColor(t.color)
@@ -1919,7 +1922,9 @@
                 });
 
             // now ジャンプ（current はフリータスクの配置起点なので固定タスクを含まない latestEnd ベース）
-            let current = (useNow && date === today && now > latestEnd) ? now : latestEnd;
+            let rawCurrent = (useNow && date === today && now > latestEnd) ? now : latestEnd;
+            // ミリ秒精度のまま placeWithSegments に渡すとサブミニッツのゼロ幅セグメントが生まれるため分単位に切り上げ
+            let current = new Date(Math.ceil(rawCurrent.getTime() / 60000) * 60000);
 
             // ④ 自由タスク（未開始・未完了・scheduledTime なし）→ 固定タスクで分断しながら積み上げ
             tasks.filter(t => !t.done && t.startTime === 0 && !t.scheduledTime)
