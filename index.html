@@ -282,7 +282,9 @@
             padding: 8px 8px 3px;
             position: relative;
             border-radius: 8px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+            background: #fff;
+            color: #222;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.09), 0 1px 3px rgba(0,0,0,0.06);
         }
 
         .task strong {
@@ -339,7 +341,6 @@
             50%       { opacity: 0.65; }
         }
         .working {
-            border: 2px solid red;
             animation: breathe 1.8s ease-in-out infinite;
         }
 
@@ -863,11 +864,12 @@
         html.dark #tasks-container { background: #111213; }
         html.dark .done-folder-header { background: #2c2c2e; color: #666; }
         html.dark .done-folder-header:hover { background: #38383a; }
-        html.dark .task { color: #222; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
-        html.dark .task-meta { color: rgba(0,0,0,0.5); }
-        html.dark .task .memo { color: rgba(0,0,0,0.5); }
-        html.dark .task-wait-date { color: rgba(0,0,0,0.45); }
-        html.dark .resurface-badge { color: rgba(0,0,0,0.55); }
+        html.dark .task { background: #2c2c2e; color: #e5e5e7; box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.35); }
+        html.dark .task-meta { color: rgba(255,255,255,0.45); }
+        html.dark .task .memo { color: rgba(255,255,255,0.4); }
+        html.dark .task-wait-date { color: rgba(255,255,255,0.4); }
+        html.dark .task-actions button { color: rgba(255,255,255,0.45); }
+        html.dark .task-actions button:hover { color: rgba(255,255,255,0.75); }
         html.dark .section-divider { background: #2c2c2e; color: #555; border-top-color: #2e2e2e; border-bottom-color: #2e2e2e; }
         html.dark #quickAddBar { background: #2c2c2e; border-color: #3a3a3a; }
         html.dark #quickAddInput { color: #e0e0e0; }
@@ -1170,11 +1172,11 @@
             if (task.waiting && task.waitUntil > today) classes += " waiting-mode";
             div.className = classes;
 
-            if (task.startTime > 0 && !task.done && !task.waiting && task.estimate > 0) {
+            const isRunning = task.startTime > 0 && !task.done && !task.waiting;
+            div.style.borderLeft = `4px solid ${isRunning ? 'red' : (task.color || '#888')}`;
+            if (isRunning && task.estimate > 0) {
                 const progress = Math.min((Date.now() - task.startTime) / (task.estimate * 60000), 1) * 100;
-                div.style.background = `linear-gradient(to bottom, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.38) ${progress.toFixed(1)}%, transparent ${progress.toFixed(1)}%), ${task.color}`;
-            } else {
-                div.style.background = task.color;
+                div.style.backgroundImage = `linear-gradient(to bottom, ${task.color}22 0%, ${task.color}22 ${progress.toFixed(1)}%, transparent ${progress.toFixed(1)}%)`;
             }
 
             const isResurfacing = task.waiting && task.waitUntil && task.waitUntil <= today;
@@ -2279,8 +2281,11 @@
                         setSelectedDay(info.dateStr.slice(0, 10));
                     },
                     eventClick(info) {
-                        if (calendar.view.type === 'timeGridDay') return;
-                        setSelectedDay(info.event.startStr.slice(0, 10));
+                        const task = info.event.extendedProps.task;
+                        if (task) editTask(task.id);
+                        if (calendar.view.type !== 'timeGridDay') {
+                            setSelectedDay(info.event.startStr.slice(0, 10));
+                        }
                     },
                     eventDidMount(info) {
                         const el = info.el;
@@ -2497,7 +2502,7 @@
                         const task = allTasks.find(t => t.id === card.dataset.id);
                         if (!task || !task.startTime || !task.estimate) return;
                         const progress = Math.min((Date.now() - task.startTime) / (task.estimate * 60000), 1) * 100;
-                        card.style.background = `linear-gradient(to bottom, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.38) ${progress.toFixed(1)}%, transparent ${progress.toFixed(1)}%), ${task.color}`;
+                        card.style.backgroundImage = `linear-gradient(to bottom, ${task.color}22 0%, ${task.color}22 ${progress.toFixed(1)}%, transparent ${progress.toFixed(1)}%)`;
                         const elapsedEl = card.querySelector('.task-elapsed');
                         if (elapsedEl) elapsedEl.textContent = Math.max(1, Math.floor((Date.now() - task.startTime) / 60000)) + '分';
                     });
