@@ -643,6 +643,13 @@
             box-shadow: none !important;
         }
 
+        /* 5分未満の短いイベント：ビジュアル上の最低高さを確保し隣接イベントの上に表示 */
+        /* スパン計算（重なり判定）は eventMinHeight:0 のため影響なし */
+        .fc-timegrid-event-harness:has(.fc-task-short) {
+            min-height: 20px;
+            z-index: 10 !important;
+        }
+
         .fc-event-time {
             font-size: larger !important;
             color: black !important;
@@ -1785,10 +1792,12 @@
                         const segStart = toMin(seg.start);
                         const segEnd = toMin(seg.end);
                         if (segStart.getTime() >= segEnd.getTime()) return;
+                        const isShortSeg = segEnd.getTime() - segStart.getTime() < 5 * 60000;
                         events.push({
                             title: t.title,
                             start: segStart,
                             end: segEnd,
+                            classNames: isShortSeg ? ['fc-task-short'] : [],
                             backgroundColor: t.done ? getPaleColor(t.color) : t.color,
                             borderColor: t.done
                                 ? getPaleColor(t.color)
