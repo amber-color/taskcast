@@ -643,13 +643,6 @@
             box-shadow: none !important;
         }
 
-        /* 5分未満の短いイベント：孤立している場合は 20px 確保して時間を表示
-           連続タスクの場合は次イベントが DOM 順で上に来るため自然な高さ（薄いバー）になる
-           z-index は設定しない（設定すると次タスクの時間が隠れるため） */
-        .fc-timegrid-event-harness:has(.fc-task-short) {
-            min-height: 20px;
-        }
-
         .fc-event-time {
             font-size: larger !important;
             color: black !important;
@@ -1792,12 +1785,10 @@
                         const segStart = toMin(seg.start);
                         const segEnd = toMin(seg.end);
                         if (segStart.getTime() >= segEnd.getTime()) return;
-                        const isShortSeg = segEnd.getTime() - segStart.getTime() < 5 * 60000;
                         events.push({
                             title: t.title,
                             start: segStart,
                             end: segEnd,
-                            classNames: isShortSeg ? ['fc-task-short'] : [],
                             backgroundColor: t.done ? getPaleColor(t.color) : t.color,
                             borderColor: t.done
                                 ? getPaleColor(t.color)
