@@ -1458,14 +1458,25 @@
             if (!task) return;
 
             const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
-            if (task.date !== today) {
+            const isResurfaced = task.waiting && task.waitUntil && task.waitUntil <= today;
+
+            if (!isResurfaced && task.date !== today) {
                 alert("本日のタスクしか開始できません。");
                 return;
             }
 
-            task.startTime = Date.now();
+            const fields = { startTime: Date.now() };
+            if (isResurfaced) {
+                task.waiting = false;
+                task.waitUntil = '';
+                if (task.date < today) task.date = today;
+                fields.waiting = false;
+                fields.waitUntil = '';
+                fields.date = task.date;
+            }
+            task.startTime = fields.startTime;
             syncLocal();
-            apiCall({ action: 'update', id, fields: { startTime: task.startTime } });
+            apiCall({ action: 'update', id, fields });
             sortTasksByTime(task.date);
             renderTasks();
             requestAnimationFrame(() => refreshNowIndicator());
