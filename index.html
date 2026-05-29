@@ -771,6 +771,7 @@
             width: 100%;
             box-sizing: border-box;
             padding: 8px 10px;
+            height: 38px;
             border: 1px solid #ccc;
             border-radius: 8px;
             font-size: 14px;
@@ -997,11 +998,11 @@
                 <label>開始</label><input type="time" id="modalStartTime">
                 <label>終了</label><input type="time" id="modalEndTime">
             </div>
-            <input type="url" id="modalUrl" placeholder="URL">
             <div class="modal-row" id="modalFixedRow">
                 <button type="button" id="modalFixedToggle" class="fixed-toggle">開始時刻: 固定しない</button>
                 <input type="time" id="modalScheduledTime" style="display:none;flex:1;">
             </div>
+            <input type="url" id="modalUrl" placeholder="URL">
             <div class="color-palette" id="modalColorPalette"></div>
             <textarea id="modalMemo" placeholder="メモ"></textarea>
             <div class="modal-footer">
