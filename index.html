@@ -2478,15 +2478,42 @@
                     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
                     const task = allTasks.find(t => t.id === waitingTargetId);
                     if (task) {
-                        const newTitle = document.getElementById('waitModalTitle').value.trim();
-                        if (newTitle) task.title = newTitle;
-                        task.waiting = true;
-                        task.waitUntil = date;
-                        task.order = -1;
-                        syncLocal();
-                        apiCall({ action: 'update', id: waitingTargetId, fields: {
-                            title: task.title, waiting: true, waitUntil: date, order: -1
-                        }});
+                        const newTitle = document.getElementById('waitModalTitle').value.trim() || task.title;
+                        const isStartedOrDone = task.startTime > 0 || task.done;
+                        if (isStartedOrDone) {
+                            // 開始済み・完了済み: 複製して複製側を待ちタスクにする
+                            const copy = {
+                                id: Date.now().toString(),
+                                date: task.date,
+                                title: newTitle,
+                                memo: task.memo,
+                                url: task.url,
+                                color: task.color,
+                                estimate: task.estimate,
+                                actual: 0,
+                                startTime: 0,
+                                done: false,
+                                waiting: true,
+                                waitUntil: date,
+                                order: -1,
+                                scheduledTime: task.scheduledTime,
+                                repeatDays: task.repeatDays || [],
+                                templateId: task.templateId || null,
+                            };
+                            allTasks.push(copy);
+                            syncLocal();
+                            apiCall({ action: 'add', task: copy });
+                        } else {
+                            // 未開始: そのタスク自体を待ちタスクに更新
+                            task.title = newTitle;
+                            task.waiting = true;
+                            task.waitUntil = date;
+                            task.order = -1;
+                            syncLocal();
+                            apiCall({ action: 'update', id: waitingTargetId, fields: {
+                                title: task.title, waiting: true, waitUntil: date, order: -1
+                            }});
+                        }
                         renderTasks();
                     }
                     waitingTargetId = null;
