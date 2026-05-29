@@ -732,17 +732,28 @@
         }
 
         /* ===== 編集モーダル ===== */
+        #editModal, #waitModal, #deleteModal {
+            display: flex;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.18s ease;
+        }
+        #editModal.open, #waitModal.open, #deleteModal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #editModal.open #editModalBox,
+        #waitModal.open > div,
+        #deleteModal.open > div {
+            transform: scale(1) translateY(0);
+        }
         #editModal {
-            display: none;
             position: fixed;
             inset: 0;
             background: rgba(0,0,0,0.45);
             z-index: 1000;
             align-items: center;
             justify-content: center;
-        }
-        #editModal.open {
-            display: flex;
         }
         #editModalBox {
             background: #fff;
@@ -756,6 +767,8 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            transform: scale(0.97) translateY(6px);
+            transition: transform 0.2s ease;
         }
         #editModalBox h3 {
             margin: 0 0 4px;
@@ -887,11 +900,11 @@
         html.dark #waitModal textarea, html.dark #waitModal input { background: #2c2c2e; border-color: #3a3a3a; color: #e0e0e0; }
         html.dark #waitModalCancelBtn { background: #2c2c2e; color: #aaa; }
         html.dark #waitModalSaveBtn { background: #aaa; color: #111; }
-        #waitModal > div { background: #fff; }
+        #waitModal > div { background: #fff; transform: scale(0.97) translateY(6px); transition: transform 0.2s ease; }
         #waitModal h3 { color: #333; }
         #waitModalCancelBtn { background: #e0e0e5; color: #333; }
         #waitModalSaveBtn { background: #333; color: #fff; }
-        #deleteModal > div { background: #fff; }
+        #deleteModal > div { background: #fff; transform: scale(0.97) translateY(6px); transition: transform 0.2s ease; }
         #deleteModalMsg { color: #333; }
         #deleteModalCancelBtn { background: #e0e0e5; color: #333; }
         #deleteModalConfirmBtn { background: #d32f2f; color: #fff; }
@@ -1024,7 +1037,7 @@
     </div>
 
     <!-- 待ちモーダル -->
-    <div id="waitModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;">
+    <div id="waitModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;">
         <div style="border-radius:12px;padding:24px;width:320px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,0.2);display:flex;flex-direction:column;gap:10px;">
             <h3 style="margin:0 0 4px;font-size:16px;">待ち設定</h3>
             <textarea id="waitModalTitle" rows="2" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:14px;font-family:inherit;resize:none;"></textarea>
@@ -1039,7 +1052,7 @@
     </div>
 
     <!-- 削除確認モーダル -->
-    <div id="deleteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;">
+    <div id="deleteModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;">
         <div style="border-radius:12px;padding:24px;width:320px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,0.2);display:flex;flex-direction:column;gap:14px;">
             <p id="deleteModalMsg" style="margin:0;font-size:15px;line-height:1.5;"></p>
             <div class="modal-footer">
@@ -1389,7 +1402,7 @@
             const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
             document.getElementById('waitModalTitle').value = task ? task.title : '';
             document.getElementById('waitModalDate').value = today;
-            document.getElementById('waitModal').style.display = 'flex';
+            document.getElementById('waitModal').classList.add('open');
             setTimeout(() => {
                 const ta = document.getElementById('waitModalTitle');
                 ta?.focus();
@@ -1416,13 +1429,13 @@
             if (!task) return;
             deletingTaskId = id;
             document.getElementById('deleteModalMsg').textContent = `タスク「${task.title || '(無題)'}」を削除しますか？`;
-            document.getElementById('deleteModal').style.display = 'flex';
+            document.getElementById('deleteModal').classList.add('open');
         }
 
         function confirmDelete() {
             const id = deletingTaskId;
             deletingTaskId = null;
-            document.getElementById('deleteModal').style.display = 'none';
+            document.getElementById('deleteModal').classList.remove('open');
             const task = allTasks.find(t => t.id === id);
             if (!task) return;
 
@@ -2477,7 +2490,7 @@
                 // 待ちモーダルのイベント
                 document.getElementById('waitModalCancelBtn').addEventListener('click', () => {
                     waitingTargetId = null;
-                    document.getElementById('waitModal').style.display = 'none';
+                    document.getElementById('waitModal').classList.remove('open');
                 });
                 document.getElementById('waitModalSaveBtn').addEventListener('click', () => {
                     const date = document.getElementById('waitModalDate').value;
@@ -2523,24 +2536,24 @@
                         renderTasks();
                     }
                     waitingTargetId = null;
-                    document.getElementById('waitModal').style.display = 'none';
+                    document.getElementById('waitModal').classList.remove('open');
                 });
                 document.getElementById('waitModal').addEventListener('click', e => {
                     if (e.target === document.getElementById('waitModal')) {
                         waitingTargetId = null;
-                        document.getElementById('waitModal').style.display = 'none';
+                        document.getElementById('waitModal').classList.remove('open');
                     }
                 });
 
                 document.getElementById('deleteModalCancelBtn').addEventListener('click', () => {
                     deletingTaskId = null;
-                    document.getElementById('deleteModal').style.display = 'none';
+                    document.getElementById('deleteModal').classList.remove('open');
                 });
                 document.getElementById('deleteModalConfirmBtn').addEventListener('click', confirmDelete);
                 document.getElementById('deleteModal').addEventListener('click', e => {
                     if (e.target === document.getElementById('deleteModal')) {
                         deletingTaskId = null;
-                        document.getElementById('deleteModal').style.display = 'none';
+                        document.getElementById('deleteModal').classList.remove('open');
                     }
                 });
 
