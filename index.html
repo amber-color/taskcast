@@ -986,22 +986,22 @@
     <div id="editModal">
         <div id="editModalBox">
             <h3>タスク編集</h3>
+            <div class="modal-row">
+                <input type="text" id="modalTitle" placeholder="タイトル" style="flex:1;">
+            </div>
+            <div class="modal-row">
+                <label>日付</label><input type="date" id="modalDate">
+                <label>見積</label><input type="text" inputmode="numeric" id="modalEstimate" style="width:72px;min-width:0;">
+            </div>
             <div id="modalTimeRow" class="modal-row" style="display:none;">
                 <label>開始</label><input type="time" id="modalStartTime">
                 <label>終了</label><input type="time" id="modalEndTime">
             </div>
-            <div class="modal-row">
-                <label>日付</label><input type="date" id="modalDate">
-            </div>
+            <input type="url" id="modalUrl" placeholder="URL">
             <div class="modal-row" id="modalFixedRow">
                 <button type="button" id="modalFixedToggle" class="fixed-toggle">開始時刻: 固定しない</button>
                 <input type="time" id="modalScheduledTime" style="display:none;flex:1;">
             </div>
-            <div class="modal-row">
-                <input type="text" id="modalTitle" placeholder="タイトル" style="flex:7;">
-                <label>見積</label><input type="text" inputmode="numeric" id="modalEstimate" style="flex:3;min-width:0;">
-            </div>
-            <input type="url" id="modalUrl" placeholder="URL">
             <div class="color-palette" id="modalColorPalette"></div>
             <textarea id="modalMemo" placeholder="メモ"></textarea>
             <div class="modal-footer">
