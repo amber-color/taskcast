@@ -778,7 +778,7 @@
         }
         #editModalBox textarea {
             resize: vertical;
-            min-height: 72px;
+            min-height: 144px;
         }
         .modal-row {
             display: flex;
@@ -998,8 +998,8 @@
                 <input type="time" id="modalScheduledTime" style="display:none;flex:1;">
             </div>
             <div class="modal-row">
-                <input type="text" id="modalTitle" placeholder="タイトル" style="flex:1;">
-                <label>見積</label><input type="text" inputmode="numeric" id="modalEstimate" style="width:70px;">
+                <input type="text" id="modalTitle" placeholder="タイトル" style="flex:7;">
+                <label>見積</label><input type="text" inputmode="numeric" id="modalEstimate" style="flex:3;min-width:0;">
             </div>
             <input type="url" id="modalUrl" placeholder="URL">
             <div class="color-palette" id="modalColorPalette"></div>
@@ -1641,16 +1641,19 @@
             document.getElementById("modalUrl").value = task.url ? decodeURIComponent(task.url) : "";
             document.getElementById("modalMemo").value = task.memo || "";
 
-            // 完了タスクのみ開始・終了時刻を表示
+            // 実行中・完了タスクは開始・終了時刻を表示
             const timeRow = document.getElementById("modalTimeRow");
-            if (task.done && task.startTime > 0) {
+            if (task.startTime > 0) {
                 timeRow.style.display = "flex";
                 const startD = new Date(task.startTime);
                 document.getElementById("modalStartTime").value = startD.toTimeString().slice(0, 5);
-                const endD = new Date(task.startTime + (task.actual || task.estimate) * 60000);
-                document.getElementById("modalEndTime").value = endD.toTimeString().slice(0, 5);
+                const endEl = document.getElementById("modalEndTime");
+                const endMs = task.done ? task.startTime + (task.actual || task.estimate) * 60000 : Date.now();
+                endEl.value = new Date(endMs).toTimeString().slice(0, 5);
+                endEl.disabled = !task.done;
             } else {
                 timeRow.style.display = "none";
+                document.getElementById("modalEndTime").disabled = false;
             }
 
             // 日付入力: 進行中は変更不可
@@ -1732,17 +1735,19 @@
             const sel = document.querySelector("#modalColorPalette .color-swatch.selected");
             if (sel) task.color = sel.dataset.color;
 
-            // 完了タスクの開始・終了手編集
-            if (task.done) {
+            // 実行中・完了タスクの開始時刻手編集
+            if (task.startTime > 0) {
                 const stVal = document.getElementById("modalStartTime").value;
                 const enVal = document.getElementById("modalEndTime").value;
-                if (/^\d{2}:\d{2}$/.test(stVal) && /^\d{2}:\d{2}$/.test(enVal)) {
+                if (/^\d{2}:\d{2}$/.test(stVal)) {
                     const base = task.date;
                     const startMs = new Date(`${base}T${stVal}`).getTime();
-                    let endMs   = new Date(`${base}T${enVal}`).getTime();
-                    if (endMs <= startMs) endMs += 24 * 60 * 60 * 1000;
                     task.startTime = startMs;
-                    task.actual = Math.max(1, Math.round((endMs - startMs) / 60000));
+                    if (task.done && /^\d{2}:\d{2}$/.test(enVal)) {
+                        let endMs = new Date(`${base}T${enVal}`).getTime();
+                        if (endMs <= startMs) endMs += 24 * 60 * 60 * 1000;
+                        task.actual = Math.max(1, Math.round((endMs - startMs) / 60000));
+                    }
                 }
             }
 
