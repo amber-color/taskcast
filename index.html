@@ -1511,79 +1511,47 @@
                 return;
             }
 
-            const nowMs    = Date.now();
-            const rawMin   = (nowMs - task.startTime) / 60000;
-            const actual   = rawMin < 1 ? 1 : Math.floor(rawMin);
-            const remaining = Math.max(1, task.estimate - actual);
-            const origTitle = task.title;
+            // ボタンをスピナーに切り替え
+            const card = document.querySelector(`.task[data-id="${id}"]`);
+            let pauseBtn = null;
+            if (card) {
+                pauseBtn = card.querySelector('[onclick^="interruptTask"]');
+                if (pauseBtn) {
+                    pauseBtn.innerHTML = `<span class="btn-spinner"><svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 1a6 6 0 0 1 0 12"/></svg></span>`;
+                    pauseBtn.disabled = true;
+                }
+            }
 
-            // 楽観的ローカル更新（API待ちなし）
-            task.title    = origTitle + '（中断）';
-            task.done     = true;
-            task.actual   = actual;
-            task.estimate = Math.min(task.estimate, actual);
-
-            const contTask = {
-                id: String(nowMs),
-                date: task.date,
-                title: origTitle,
-                memo: task.memo || '',
-                url: task.url || '',
-                color: task.color,
-                estimate: remaining,
-                actual: 0,
-                startTime: 0,
-                done: false,
-                waiting: false,
-                waitUntil: '',
-                order: task.order + 0.5,
-                scheduledTime: '',
-                repeatDays: task.repeatDays || [],
-                templateId: task.templateId || null,
-            };
-
-            const idx = allTasks.indexOf(task);
-            allTasks.splice(idx + 1, 0, contTask);
+            const result = await apiCall({ action: 'interrupt', id, now_ms: Date.now() });
+            if (!result) { alert("中断に失敗しました（通信エラー）"); return; }
+            if (!result.ok) { alert("中断に失敗しました: " + (result.error || "不明なエラー")); return; }
+            const otherDays = allTasks.filter(t => t.date !== task.date);
+            allTasks = [...otherDays, ...result.tasks];
             taskHistoryCache = null;
             syncLocal();
 
-            // アニメーション → renderTasks（即座に実行）
-            const card = document.querySelector(`.task[data-id="${id}"]`);
             const afterRender = () => {
                 renderTasks();
                 requestAnimationFrame(() => refreshNowIndicator());
             };
 
-            if (!card) {
-                afterRender();
-            } else {
-                card.style.height = card.offsetHeight + 'px';
-                card.classList.add('task-completing');
-                const overlay = document.createElement('div');
-                overlay.className = 'task-complete-overlay';
-                overlay.innerHTML = '<svg viewBox="0 0 16 16" width="28" height="28" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect x="3.5" y="2.5" width="3.5" height="11" rx="1"/><rect x="9" y="2.5" width="3.5" height="11" rx="1"/></svg>';
-                card.appendChild(overlay);
-                requestAnimationFrame(() => requestAnimationFrame(() => {
-                    card.style.height = '0';
-                    card.style.opacity = '0';
-                    card.style.marginBottom = '0';
-                    card.style.padding = '0';
-                }));
-                setTimeout(afterRender, 500);
-            }
+            if (!card) { afterRender(); return; }
 
-            // バックグラウンドで API に永続化（order の正規化結果で補正）
-            const result = await apiCall({ action: 'interrupt', id, now_ms: nowMs });
-            if (result?.ok) {
-                const otherDays = allTasks.filter(t => t.date !== task.date);
-                allTasks = [...otherDays, ...result.tasks];
-                taskHistoryCache = null;
-                syncLocal();
-                renderTasks();
-                requestAnimationFrame(() => refreshNowIndicator());
-            } else if (!result) {
-                alert("中断の保存に失敗しました（通信エラー）。再読み込みしてください。");
-            }
+            card.style.height = card.offsetHeight + 'px';
+            card.classList.add('task-completing');
+            const overlay = document.createElement('div');
+            overlay.className = 'task-complete-overlay';
+            overlay.innerHTML = '<svg viewBox="0 0 16 16" width="28" height="28" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect x="3.5" y="2.5" width="3.5" height="11" rx="1"/><rect x="9" y="2.5" width="3.5" height="11" rx="1"/></svg>';
+            card.appendChild(overlay);
+
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                card.style.height = '0';
+                card.style.opacity = '0';
+                card.style.marginBottom = '0';
+                card.style.padding = '0';
+            }));
+
+            setTimeout(afterRender, 500);
         }
 
         function finishTask(id) {
