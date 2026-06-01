@@ -993,7 +993,7 @@
             <div id="quickAddBar">
                 <input type="text" id="quickAddInput" placeholder="タスクを追加… (Enter で確定)" autocomplete="off">
                 <div id="quickAddEstimateWrap">
-                    <input type="number" id="quickAddEstimate" min="1" max="480" step="1">
+                    <input type="text" inputmode="numeric" id="quickAddEstimate" min="1" max="480" step="1">
                     <span id="quickAddEstimateLabel">分</span>
                 </div>
             </div>
@@ -2120,6 +2120,11 @@
         }
         // --- スマート見積時間 ここまで ---
 
+        document.getElementById('quickAddEstimate').addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            document.getElementById('quickAddInput').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+        });
+
         document.getElementById('quickAddInput').addEventListener('keydown', (e) => {
             if (e.key !== 'Enter') return;
             const title = e.target.value.trim();
@@ -2133,7 +2138,7 @@
                 memo: '', url: '', done: false, actual: 0, startTime: 0, scheduledTime: '',
                 waiting: false, waitUntil: '',
                 color: colorList[tasks.length % colorList.length],
-                estimate: parseInt(window._quickAdd?.qEstimate.value) || window._quickAdd?.getDefaultEstimate() || 15,
+                estimate: parseInt((window._quickAdd?.qEstimate.value || '').replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))) || window._quickAdd?.getDefaultEstimate() || 15,
                 order: maxOrder + 1,
                 repeatDays: [],
                 templateId: null,
