@@ -403,7 +403,7 @@
         #quickAddInput::placeholder { color: #bbb; }
 
         #quickAddEstimateWrap {
-            display: none;
+            display: flex;
             align-items: center;
             gap: 3px;
             flex-shrink: 0;
@@ -2055,7 +2055,6 @@
             }
 
             function hideQuickAddExtras() {
-                qEstimateWrap.classList.remove('visible');
                 qSuggest.style.display = 'none';
                 clearTimeout(suggestTimer);
             }
@@ -2084,9 +2083,10 @@
                 });
             }
 
+            if (!qEstimate.value) qEstimate.value = getDefaultEstimate();
+
             qInput.addEventListener('focus', () => {
                 if (!qEstimate.value) qEstimate.value = getDefaultEstimate();
-                qEstimateWrap.classList.add('visible');
             });
 
             qInput.addEventListener('input', () => {
