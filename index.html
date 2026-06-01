@@ -366,6 +366,13 @@
             70%  { transform: scale(1.2); opacity: 1; }
             100% { transform: scale(1);   opacity: 1; }
         }
+        @keyframes taskNewFlash {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.25; }
+        }
+        .task-new-flash {
+            animation: taskNewFlash 0.4s ease-in-out 5;
+        }
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -1334,6 +1341,16 @@
             return folder;
         }
 
+        function highlightNewTask(id) {
+            requestAnimationFrame(() => {
+                const card = document.querySelector(`.task[data-id="${id}"]`);
+                if (!card) return;
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                card.classList.add('task-new-flash');
+                setTimeout(() => card.classList.remove('task-new-flash'), 2000);
+            });
+        }
+
         function renderTasks() {
             const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
             let { tasks: timedTasks } = buildTimeline(currentDate);
@@ -1785,6 +1802,13 @@
                 taskHistoryCache = null;
                 syncLocal();
                 apiCall({ action: 'add', task });
+                pendingNewTask = null;
+                editingId = null;
+                document.getElementById("editModal").classList.remove("open");
+                sortTasksByTime(task.date);
+                renderTasks();
+                highlightNewTask(task.id);
+                return;
             } else {
                 syncLocal();
                 apiCall({ action: 'update', id, fields: {
@@ -2149,6 +2173,7 @@
             apiCall({ action: 'add', task: newTask });
             sortTasksByTime(currentDate);
             renderTasks();
+            highlightNewTask(newTask.id);
             e.target.value = '';
             if (window._quickAdd) {
                 window._quickAdd.qEstimate.value = '';
