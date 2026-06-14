@@ -2086,10 +2086,8 @@
             function renderSuggestions(results) {
                 if (!results.length || !smartEstimate) {
                     qSuggest.style.display = 'none';
-                    qEstimate.value = getDefaultEstimate();
                     return;
                 }
-                qEstimate.value = results[0].total;
                 qSuggest.innerHTML = results.map((r, i) =>
                     `<div class="qs-item${i === 0 ? ' qs-top' : ''}" data-actual="${r.total}" data-title="${escapeHTML(r.title)}">
                         <span class="qs-title">${escapeHTML(r.title)}</span>
