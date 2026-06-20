@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     scheduled_time TEXT    NOT NULL DEFAULT '',
     waiting        INTEGER NOT NULL DEFAULT 0,
     wait_until     TEXT    NOT NULL DEFAULT '',
+    subtasks       TEXT    NOT NULL DEFAULT '[]',
     PRIMARY KEY (id, user_id)
 );
 

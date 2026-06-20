@@ -370,6 +370,23 @@
             0%, 100% { opacity: 1; }
             50%       { opacity: 0.25; }
         }
+        /* サブタスク（タスクカード内） */
+        .subtask-list { display: flex; flex-direction: column; gap: 3px; margin: 4px 0 2px; }
+        .subtask-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+        .subtask-item input[type="checkbox"] { width: 13px; height: 13px; accent-color: #555; flex-shrink: 0; cursor: pointer; margin: 0; }
+        .subtask-item label { flex: 1; cursor: pointer; color: #444; line-height: 1.3; }
+        .subtask-item.subtask-done label { text-decoration: line-through; opacity: 0.5; }
+        html.dark .subtask-item label { color: #bbb; }
+        /* サブタスク（編集モーダル内） */
+        .modal-subtask-list { display: flex; flex-direction: column; gap: 6px; }
+        .modal-subtask-row { display: flex; align-items: center; gap: 6px; }
+        .modal-subtask-row input[type="text"] { flex: 1; }
+        .modal-subtask-row .st-del-btn { border: none; background: none; color: #bbb; cursor: pointer; font-size: 18px; padding: 0 4px; line-height: 1; flex-shrink: 0; }
+        .modal-subtask-row .st-del-btn:hover { color: #d32f2f; }
+        #modalAddSubtask { font-size: 12px; color: #888; background: none; border: 1px dashed #ccc; border-radius: 6px; padding: 5px 8px; cursor: pointer; width: 100%; text-align: left; box-sizing: border-box; }
+        #modalAddSubtask:hover { border-color: #888; color: #444; }
+        html.dark #modalAddSubtask { border-color: #444; color: #666; }
+        html.dark #modalAddSubtask:hover { border-color: #888; color: #aaa; }
         .task-new-flash {
             animation: taskNewFlash 0.4s ease-in-out 5;
         }
@@ -1029,6 +1046,10 @@
             <input type="url" id="modalUrl" placeholder="URL">
             <div class="color-palette" id="modalColorPalette"></div>
             <textarea id="modalMemo" placeholder="メモ"></textarea>
+            <div id="modalSubtaskSection">
+                <div class="modal-subtask-list" id="modalSubtaskList"></div>
+                <button type="button" id="modalAddSubtask">＋ サブタスクを追加</button>
+            </div>
             <div class="modal-footer">
                 <button id="modalCancelBtn">キャンセル</button>
                 <button id="modalSaveBtn">保存</button>
@@ -1253,6 +1274,14 @@
                 metaHtml = `<span class="task-meta">${clockSvg} ${task.estimate}分</span>`;
             }
 
+            const subtasksHtml = (task.subtasks && task.subtasks.length)
+                ? `<div class="subtask-list">${task.subtasks.map(st =>
+                    `<div class="subtask-item${st.done ? ' subtask-done' : ''}" data-st-id="${st.id}">
+                        <input type="checkbox" ${st.done ? 'checked' : ''} id="st-${task.id}-${st.id}">
+                        <label for="st-${task.id}-${st.id}">${escapeHTML(st.title)}</label>
+                    </div>`
+                ).join('')}</div>` : '';
+
             div.innerHTML = `
             <div>
              ${resurfaceBadge}<strong>${task.url
@@ -1265,6 +1294,7 @@
             </div>
             <div>
               <div class="memo">${task.memo ? escapeHTML(task.memo) : ""}</div>
+              ${subtasksHtml}
             <div class="task-actions">${actionButtons}
             </div>
           `;
@@ -1273,6 +1303,18 @@
                 const memoEl = div.querySelector('.memo');
                 memoEl.addEventListener('click', () => memoEl.classList.toggle('expanded'));
             }
+            div.querySelectorAll('.subtask-item input[type="checkbox"]').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    e.stopPropagation();
+                    const stId = cb.closest('.subtask-item').dataset.stId;
+                    task.subtasks = task.subtasks.map(st =>
+                        st.id === stId ? { ...st, done: cb.checked } : st
+                    );
+                    cb.closest('.subtask-item').classList.toggle('subtask-done', cb.checked);
+                    syncLocal();
+                    apiCall({ action: 'update', id: task.id, fields: { subtasks: task.subtasks } });
+                });
+            });
             return div;
         }
 
@@ -1339,6 +1381,26 @@
             folder.appendChild(header);
             folder.appendChild(bodyWrap);
             return folder;
+        }
+
+        function addModalSubtaskRow(id, title, done) {
+            const list = document.getElementById('modalSubtaskList');
+            const row = document.createElement('div');
+            row.className = 'modal-subtask-row';
+            row.dataset.stId = id || (Date.now().toString() + Math.random().toString(36).slice(2));
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.placeholder = 'サブタスク';
+            inp.value = title || '';
+            const del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'st-del-btn';
+            del.title = '削除';
+            del.textContent = '×';
+            del.addEventListener('click', () => row.remove());
+            row.appendChild(inp);
+            row.appendChild(del);
+            list.appendChild(row);
         }
 
         function highlightNewTask(id) {
@@ -1721,6 +1783,10 @@
                 });
             });
 
+            // サブタスクをモーダルに描画
+            document.getElementById('modalSubtaskList').innerHTML = '';
+            (task.subtasks || []).forEach(st => addModalSubtaskRow(st.id, st.title, st.done));
+
             document.getElementById("editModal").classList.add("open");
             setTimeout(() => document.getElementById("modalTitle")?.focus(), 50);
         }
@@ -1797,6 +1863,16 @@
                 }
             }
 
+            // サブタスク収集（既存の done 状態を保持）
+            const existingSubtasks = isNew ? [] : (allTasks.find(t => t.id === id)?.subtasks || []);
+            const stRows = document.querySelectorAll('#modalSubtaskList .modal-subtask-row');
+            task.subtasks = Array.from(stRows).map(row => {
+                const stTitle = row.querySelector('input[type="text"]').value.trim();
+                const stId = row.dataset.stId;
+                const existing = existingSubtasks.find(s => s.id === stId);
+                return { id: stId, title: stTitle, done: existing ? existing.done : false };
+            }).filter(st => st.title);
+
             if (isNew) {
                 allTasks.push(task);
                 taskHistoryCache = null;
@@ -1817,6 +1893,7 @@
                     startTime: task.startTime, actual: task.actual,
                     done: task.done, order: task.order,
                     scheduledTime: task.scheduledTime ?? "",
+                    subtasks: task.subtasks,
                 }});
             }
 
@@ -2164,6 +2241,7 @@
                 order: maxOrder + 1,
                 repeatDays: [],
                 templateId: null,
+                subtasks: [],
             };
             allTasks.push(newTask);
             taskHistoryCache = null;
@@ -2442,6 +2520,12 @@
                     });
                 });
 
+                document.getElementById("modalAddSubtask").addEventListener("click", () => {
+                    addModalSubtaskRow('', '', false);
+                    const rows = document.querySelectorAll('#modalSubtaskList .modal-subtask-row');
+                    rows[rows.length - 1]?.querySelector('input[type="text"]')?.focus();
+                });
+
                 document.getElementById("modalFixedToggle").addEventListener("click", () => {
                     const btn = document.getElementById("modalFixedToggle");
                     const inp = document.getElementById("modalScheduledTime");
@@ -2470,6 +2554,7 @@
                         scheduledTime: "",
                         waiting: false,
                         waitUntil: "",
+                        subtasks: [],
                     };
                     editingId = '__new__';
 
@@ -2479,6 +2564,7 @@
                     document.getElementById("modalEstimate").value = parseInt(localStorage.getItem('defaultEstimate') ?? '15');
                     document.getElementById("modalUrl").value = "";
                     document.getElementById("modalMemo").value = "";
+                    document.getElementById("modalSubtaskList").innerHTML = "";
                     document.getElementById("modalTimeRow").style.display = "none";
 
                     const fixedRow = document.getElementById("modalFixedRow");

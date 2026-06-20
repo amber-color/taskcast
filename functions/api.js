@@ -65,6 +65,7 @@ function taskRowToJs(row) {
         scheduledTime: row.scheduled_time || '',
         waiting:       !!row.waiting,
         waitUntil:     row.wait_until || '',
+        subtasks:      JSON.parse(row.subtasks || '[]'),
     };
 }
 
@@ -246,11 +247,12 @@ const FIELD_MAP = {
     scheduledTime: 'scheduled_time',
     waiting:       'waiting',
     waitUntil:     'wait_until',
+    subtasks:      'subtasks',
 };
 
 function toDbValue(jsKey, value) {
     if (jsKey === 'done' || jsKey === 'waiting') return value ? 1 : 0;
-    if (jsKey === 'repeatDays') return JSON.stringify(value);
+    if (jsKey === 'repeatDays' || jsKey === 'subtasks') return JSON.stringify(value || []);
     if (['estimate', 'actual', 'order', 'startTime'].includes(jsKey)) return parseInt(value) || 0;
     return value;
 }
@@ -344,8 +346,8 @@ export async function onRequestPost({ request, env }) {
         await db.prepare(
             `INSERT OR REPLACE INTO tasks
              (id, user_id, date, title, memo, url, done, color, estimate, actual,
-              task_order, start_time, repeat_days, scheduled_time, waiting, wait_until)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+              task_order, start_time, repeat_days, scheduled_time, waiting, wait_until, subtasks)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
         ).bind(
             id, userId,
             t.date          || '',
@@ -362,6 +364,7 @@ export async function onRequestPost({ request, env }) {
             t.scheduledTime || '',
             t.waiting       ? 1 : 0,
             t.waitUntil     || '',
+            JSON.stringify(t.subtasks  || []),
         ).run();
         const row = await db.prepare('SELECT * FROM tasks WHERE id=? AND user_id=?').bind(id, userId).first();
         return json({ ok: true, task: taskRowToJs(row) });
@@ -441,8 +444,8 @@ export async function onRequestPost({ request, env }) {
                 .bind(actual, newEstimate, cloneTitle, id, userId),
             db.prepare(
                 `INSERT INTO tasks (id, user_id, date, title, memo, url, done, color, estimate, actual,
-                 task_order, start_time, repeat_days)
-                 VALUES (?,?,?,?,?,?,0,?,?,0,?,0,?)`
+                 task_order, start_time, repeat_days, subtasks)
+                 VALUES (?,?,?,?,?,?,0,?,?,0,?,0,?,'[]')`
             ).bind(cloneId, userId, task.date, task.title, task.memo, task.url,
                    task.color, remaining, cloneOrder, task.repeat_days),
         ]);
