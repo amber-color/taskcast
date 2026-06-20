@@ -269,6 +269,14 @@ export async function onRequestPost({ request, env }) {
     try { data = await request.json(); } catch { data = {}; }
     const action = data.action || '';
 
+    // Schema migration: add subtasks column if missing
+    try {
+        const cols = (await db.prepare('PRAGMA table_info(tasks)').all()).results;
+        if (!cols.some(c => c.name === 'subtasks')) {
+            await db.prepare("ALTER TABLE tasks ADD COLUMN subtasks TEXT NOT NULL DEFAULT '[]'").run();
+        }
+    } catch { /* ignore */ }
+
     // Tokyo time helper
     const tokyoDate = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
 
