@@ -453,9 +453,9 @@ export async function onRequestPost({ request, env }) {
             db.prepare(
                 `INSERT INTO tasks (id, user_id, date, title, memo, url, done, color, estimate, actual,
                  task_order, start_time, repeat_days, subtasks)
-                 VALUES (?,?,?,?,?,?,0,?,?,0,?,0,?,'[]')`
+                 VALUES (?,?,?,?,?,?,0,?,?,0,?,0,?,?)`
             ).bind(cloneId, userId, task.date, task.title, task.memo, task.url,
-                   task.color, remaining, cloneOrder, task.repeat_days),
+                   task.color, remaining, cloneOrder, task.repeat_days, task.subtasks || '[]'),
         ]);
 
         // Renormalize order then fetch final state in one query
