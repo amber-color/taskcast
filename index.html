@@ -382,6 +382,9 @@
         .modal-subtask-list { display: flex; flex-direction: column; gap: 6px; }
         .modal-subtask-row { display: flex; align-items: center; gap: 6px; }
         .modal-subtask-row input[type="text"] { flex: 1; }
+        .st-drag-handle { cursor: grab; color: #ccc; font-size: 15px; padding: 0 2px; flex-shrink: 0; user-select: none; line-height: 1; }
+        .st-drag-handle:active { cursor: grabbing; }
+        html.dark .st-drag-handle { color: #555; }
         .modal-subtask-row .st-del-btn { border: none; background: none; color: #bbb; cursor: pointer; font-size: 18px; padding: 0 4px; line-height: 1; flex-shrink: 0; }
         .modal-subtask-row .st-del-btn:hover { color: #d32f2f; }
         #modalAddSubtask { height: 38px; font-size: 12px; color: #888; background: none; border: 1px dashed #ccc; border-radius: 6px; padding: 0 10px; cursor: pointer; width: 100%; text-align: left; box-sizing: border-box; }
@@ -1393,6 +1396,10 @@
             inp.type = 'text';
             inp.placeholder = 'サブタスク';
             inp.value = title || '';
+            const handle = document.createElement('span');
+            handle.className = 'st-drag-handle';
+            handle.title = '並べ替え';
+            handle.innerHTML = '&#8942;&#8942;';
             const del = document.createElement('button');
             del.type = 'button';
             del.className = 'st-del-btn';
@@ -1400,6 +1407,7 @@
             del.textContent = '×';
             del.addEventListener('click', () => row.remove());
             row.appendChild(inp);
+            row.appendChild(handle);
             row.appendChild(del);
             list.appendChild(row);
         }
@@ -1785,8 +1793,14 @@
             });
 
             // サブタスクをモーダルに描画
-            document.getElementById('modalSubtaskList').innerHTML = '';
+            const stList = document.getElementById('modalSubtaskList');
+            stList.innerHTML = '';
             (task.subtasks || []).forEach(st => addModalSubtaskRow(st.id, st.title, st.done));
+            if (window._subtaskSortable) window._subtaskSortable.destroy();
+            window._subtaskSortable = new Sortable(stList, {
+                animation: 120,
+                handle: '.st-drag-handle',
+            });
 
             document.getElementById("editModal").classList.add("open");
             setTimeout(() => document.getElementById("modalTitle")?.focus(), 50);
@@ -2565,7 +2579,10 @@
                     document.getElementById("modalEstimate").value = parseInt(localStorage.getItem('defaultEstimate') ?? '15');
                     document.getElementById("modalUrl").value = "";
                     document.getElementById("modalMemo").value = "";
-                    document.getElementById("modalSubtaskList").innerHTML = "";
+                    const stListNew = document.getElementById("modalSubtaskList");
+                    stListNew.innerHTML = "";
+                    if (window._subtaskSortable) window._subtaskSortable.destroy();
+                    window._subtaskSortable = new Sortable(stListNew, { animation: 120, handle: '.st-drag-handle' });
                     document.getElementById("modalTimeRow").style.display = "none";
 
                     const fixedRow = document.getElementById("modalFixedRow");
