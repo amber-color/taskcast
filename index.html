@@ -1311,12 +1311,16 @@
                 cb.addEventListener('change', (e) => {
                     e.stopPropagation();
                     const stId = cb.closest('.subtask-item').dataset.stId;
-                    task.subtasks = task.subtasks.map(st =>
+                    const newSubtasks = task.subtasks.map(st =>
                         st.id === stId ? { ...st, done: cb.checked } : st
                     );
+                    task.subtasks = newSubtasks;
+                    // allTasks の元オブジェクトにも反映（renderTaskCard は spread コピーを受け取るため）
+                    const origin = allTasks.find(t => t.id === task.id);
+                    if (origin) origin.subtasks = newSubtasks;
                     cb.closest('.subtask-item').classList.toggle('subtask-done', cb.checked);
                     syncLocal();
-                    apiCall({ action: 'update', id: task.id, fields: { subtasks: task.subtasks } });
+                    apiCall({ action: 'update', id: task.id, fields: { subtasks: newSubtasks } });
                 });
             });
             return div;
