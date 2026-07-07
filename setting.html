@@ -323,6 +323,13 @@
             </label>
         </div>
         <div class="setting-row">
+            <label>クイック追加を先頭に挿入<br><small style="color:#999;font-weight:normal">ONのとき、実行中タスクがあればその直下に追加</small></label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="quickAddToTopInput">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="setting-row">
             <label>デフォルト見積り時間（分）</label>
             <input type="number" id="defaultEstimateInput" min="1" max="999" style="width:72px;padding:6px 10px;border:1px solid #ccc;border-radius:8px;font-size:15px;text-align:right;outline:none;">
         </div>
@@ -802,6 +809,7 @@
         const slotHeightInput = document.getElementById('slotHeightInput');
         const autoStartNextInput = document.getElementById('autoStartNextInput');
         const smartEstimateInput = document.getElementById('smartEstimateInput');
+        const quickAddToTopInput = document.getElementById('quickAddToTopInput');
         const defaultEstimateInput = document.getElementById('defaultEstimateInput');
         const darkModeInput = document.getElementById('darkModeInput');
 
@@ -810,6 +818,7 @@
         slotHeightInput.value = localStorage.getItem('slotHeightLevel') ?? '3';
         autoStartNextInput.checked = (localStorage.getItem('autoStartNext') ?? '0') === '1';
         smartEstimateInput.checked = (localStorage.getItem('smartEstimate') ?? '0') === '1';
+        quickAddToTopInput.checked = (localStorage.getItem('quickAddToTop') ?? '0') === '1';
         defaultEstimateInput.value = localStorage.getItem('defaultEstimate') ?? '15';
         darkModeInput.checked = localStorage.getItem('theme') === 'dark';
 
@@ -830,6 +839,10 @@
         if (userSettings['smartEstimate'] != null) {
             smartEstimateInput.checked = userSettings['smartEstimate'] === '1';
             localStorage.setItem('smartEstimate', userSettings['smartEstimate']);
+        }
+        if (userSettings['quickAddToTop'] != null) {
+            quickAddToTopInput.checked = userSettings['quickAddToTop'] === '1';
+            localStorage.setItem('quickAddToTop', userSettings['quickAddToTop']);
         }
         if (userSettings['defaultEstimate'] != null) {
             defaultEstimateInput.value = userSettings['defaultEstimate'];
@@ -859,6 +872,11 @@
             const val = smartEstimateInput.checked ? '1' : '0';
             localStorage.setItem('smartEstimate', val);
             apiCall({ action: 'save_setting', key: 'smartEstimate', value: val });
+        });
+        quickAddToTopInput.addEventListener('change', () => {
+            const val = quickAddToTopInput.checked ? '1' : '0';
+            localStorage.setItem('quickAddToTop', val);
+            apiCall({ action: 'save_setting', key: 'quickAddToTop', value: val });
         });
         defaultEstimateInput.addEventListener('change', () => {
             const val = String(Math.max(1, parseInt(defaultEstimateInput.value) || 15));

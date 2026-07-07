@@ -1118,6 +1118,7 @@
         const tasksEl = document.getElementById("tasks");
         let autoStartNext = false;
         let smartEstimate = false;
+        let quickAddToTop = false;
         let taskHistoryCache = null;
         let cachedDefaultEstimate = 15;
         let startTime = localStorage.getItem('startTime') || '09:00';
@@ -2249,6 +2250,13 @@
             if (!title) return;
             const tasks = getTasks(currentDate);
             const maxOrder = tasks.length ? Math.max(...tasks.map(t => t.order)) : -1;
+            const computeOrder = () => {
+                if (!quickAddToTop) return maxOrder + 1;
+                const running = tasks.find(t => t.startTime > 0 && !t.done && !t.waiting);
+                if (running) return running.order + 0.5;
+                const minOrder = tasks.length ? Math.min(...tasks.map(t => t.order)) : 0;
+                return minOrder - 1;
+            };
             const newTask = {
                 id: Date.now().toString(),
                 date: currentDate,
@@ -2257,7 +2265,7 @@
                 waiting: false, waitUntil: '',
                 color: colorList[tasks.length % colorList.length],
                 estimate: parseInt((window._quickAdd?.qEstimate.value || '').replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))) || window._quickAdd?.getDefaultEstimate() || 15,
-                order: maxOrder + 1,
+                order: computeOrder(),
                 repeatDays: [],
                 templateId: null,
                 subtasks: [],
@@ -2332,6 +2340,9 @@
 
                 smartEstimate = (userSettings['smartEstimate'] ?? localStorage.getItem('smartEstimate') ?? '0') === '1';
                 if (userSettings['smartEstimate'] != null) localStorage.setItem('smartEstimate', userSettings['smartEstimate']);
+
+                quickAddToTop = (userSettings['quickAddToTop'] ?? localStorage.getItem('quickAddToTop') ?? '0') === '1';
+                if (userSettings['quickAddToTop'] != null) localStorage.setItem('quickAddToTop', userSettings['quickAddToTop']);
 
                 cachedDefaultEstimate = parseInt(userSettings['defaultEstimate'] ?? localStorage.getItem('defaultEstimate') ?? '15');
                 if (userSettings['defaultEstimate'] != null) localStorage.setItem('defaultEstimate', String(cachedDefaultEstimate));
